@@ -1,0 +1,19 @@
+# Pasta de cache do Terraform (criada no terraform init)
+.terraform/
+
+# Arquivos de estado local (Obrigatório ignorar, pois você usa S3)
+*.tfstate
+*.tfstate.*
+
+# Arquivos de variáveis sensíveis
+*.tfvars
+*.tfvars.json
+
+# Arquivos de log e trava
+.terraform.lock.hcl
+crash.log
+
+# Arquivos do Sistema Operacional e Editores
+.DS_Store
+.vscode/
+.idea/
