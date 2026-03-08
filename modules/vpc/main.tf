@@ -55,3 +55,27 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
+
+# Security Group para os Bancos de Dados (RDS e Redis)
+resource "aws_security_group" "db_sg" {
+  name        = "${var.project_name}-db-sg"
+  description = "Allow traffic from EKS nodes"
+  vpc_id      = aws_vpc.main.id
+
+  # Regra de entrada: Permite tráfego apenas vindo da própria VPC (ou ajuste para o SG do EKS)
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.main.cidr_block]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "${var.project_name}-db-sg" }
+}
