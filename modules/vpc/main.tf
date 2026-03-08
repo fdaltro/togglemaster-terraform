@@ -62,7 +62,7 @@ resource "aws_security_group" "db_sg" {
   description = "Allow traffic from EKS nodes"
   vpc_id      = aws_vpc.main.id
 
-  # Regra de entrada: Permite tráfego apenas vindo da própria VPC (ou ajuste para o SG do EKS)
+  # Regra de entrada: Permite tráfego apenas vindo da própria VPC (ou ajuste para o SG do EKS.)
   ingress {
     from_port   = 0
     to_port     = 65535
