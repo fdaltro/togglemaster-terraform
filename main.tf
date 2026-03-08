@@ -18,7 +18,7 @@ module "database" {
 module "eks" {
   source       = "./modules/eks"
   cluster_name = var.cluster_name
-  subnet_ids   = module.network.private_subnets
+  subnet_ids   = module.network.public_subnets
   lab_role_arn = "arn:aws:iam::174935208848:role/LabRole" # Seu ARN fornecido
 }
 
