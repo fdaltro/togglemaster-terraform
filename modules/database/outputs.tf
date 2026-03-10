@@ -1,6 +1,5 @@
 output "rds_endpoints" {
-  description = "Endpoints dos bancos de dados mapeados por serviço"
-  value       = { for k, v in aws_db_instance.postgresql : k => v.endpoint }
+  value = aws_db_instance.postgresql[*].endpoint
 }
 
 output "redis_endpoint" {
