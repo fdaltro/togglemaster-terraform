@@ -7,39 +7,22 @@ resource "aws_db_subnet_group" "rds_sg" {
 }
 
 # 1. Três Instâncias RDS (PostgreSQL) - [cite: 35]
-locals {
-  databases = {
-    "auth"      = { db_name = "auth_db" }
-    "flags"     = { db_name = "flags_db" }
-    "targeting" = { db_name = "targeting_db" }
-  }
-}
-
 resource "aws_db_instance" "postgresql" {
-  for_each = local.databases
-
-  # Identificador da instância no console AWS (ex: togglemaster-db-auth)
-  identifier = "${var.project_name}-db-${each.key}"
-  
-  engine            = "postgres"
-  engine_version    = "15"
-  instance_class    = "db.t3.micro"
-  allocated_storage = 20
-  
-  # Nome específico do banco de dados solicitado
-  db_name  = each.value.db_name
-  
-  username = "adminuser"
-  password = "password123"
-
+  count                  = 3
+  identifier             = "${var.project_name}-db-${count.index}"
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = "db.t3.micro" # Econômico para Academy
+  allocated_storage      = 20
+  db_name                = "togglemaster_db_${count.index}"
+  username               = "adminuser"
+  password               = "password123" # Em produção, use Secrets Manager [cite: 20]
   db_subnet_group_name   = aws_db_subnet_group.rds_sg.name
   skip_final_snapshot    = true
   publicly_accessible    = false
   vpc_security_group_ids = [var.db_sg_id]
 
-  tags = { 
-    Name = "${var.project_name}-rds-${each.key}" 
-  }
+  tags = { Name = "${var.project_name}-rds-${count.index}" }
 }
 
 # 2. Cluster ElastiCache (Redis) - [cite: 36]
