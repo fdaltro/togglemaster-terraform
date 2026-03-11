@@ -1,5 +1,10 @@
 output "rds_endpoints" {
-  value = aws_db_instance.postgresql[*].endpoint
+  description = "Endpoints dos bancos de dados mapeados por serviço"
+  value = {
+    auth      = aws_db_instance.postgresql[0].endpoint
+    flags     = aws_db_instance.postgresql[1].endpoint
+    targeting = aws_db_instance.postgresql[2].endpoint
+  }
 }
 
 output "redis_endpoint" {
