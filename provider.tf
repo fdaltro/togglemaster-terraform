@@ -16,7 +16,6 @@ terraform {
     }
   }
 
-  # Configuração do Backend Remoto (Mantido conforme seu original)
   backend "s3" {
     bucket = "togglemaster-terraform-state-grupox"
     key    = "fase3/terraform.tfstate"
@@ -24,37 +23,30 @@ terraform {
   }
 }
 
-# Provedor AWS Principal
 provider "aws" {
   region = var.region
 }
 
-# --- Configurações Dinâmicas para Kubernetes e Helm ---
+# --- Autenticação Dinâmica ---
 
-# Busca os dados do cluster EKS criado pelo seu módulo 'eks'
-data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_name
-}
-
-# Busca o token de autenticação temporário para o cluster
+# O Token ainda precisa ser via data source, mas ele vai esperar 
+# o nome do cluster vir do módulo 'eks' [cite: 1, 2]
 data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
 }
 
-# Provedor Kubernetes: Permite criar Namespaces, Secrets e ConfigMaps
+# Provedor Kubernetes usando os outputs do seu módulo diretamente
 provider "kubernetes" {
-  host                   = data.aws_eks_cluster.cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
   token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
-# Provedor Helm: Permite a instalação do ArgoCD
+# Provedor Helm usando a mesma lógica para o ArgoCD
 provider "helm" {
   kubernetes {
-    host                   = data.aws_eks_cluster.cluster.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.cluster.token
   }
 }
-
-
