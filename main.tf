@@ -33,3 +33,9 @@ module "ecr" {
   source       = "./modules/ecr"
   project_name = var.project_name
 }
+
+# 6. Deploy do ArgoCD via Helm
+module "argocd" {
+  source     = "./modules/argocd"
+  depends_on = [module.eks] # Garante que o cluster exista antes do Helm
+}

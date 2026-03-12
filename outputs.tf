@@ -31,3 +31,13 @@ output "sqs_queue_url" {
   description = "URL da fila SQS para os microsserviços"
   value       = module.sqs.sqs_url
 }
+
+# --- Argo CD ---
+output "argocd_endpoint" {
+  value = module.argocd.argocd_url
+}
+
+output "argocd_admin_password" {
+  value     = module.argocd.argocd_password
+  sensitive = true
+}
