@@ -1,7 +1,6 @@
+# 1. Namespace e 2. Helm Release permanecem iguais...
 resource "kubernetes_namespace" "argocd" {
-  metadata {
-    name = "argocd"
-  }
+  metadata { name = "argocd" }
 }
 
 resource "helm_release" "argocd" {
@@ -9,17 +8,45 @@ resource "helm_release" "argocd" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   namespace  = kubernetes_namespace.argocd.metadata[0].name
-  version    = "7.7.1" # Versão estável do Chart
+  version    = "7.7.1"
 
-  # Configuração para expor o servidor via LoadBalancer (facilita o acesso na Academy)
-  set {
-    name  = "server.service.type"
-    value = "LoadBalancer"
+  set { name = "server.service.type", value = "LoadBalancer" }
+  set { name = "server.extraArgs", value = "{--insecure}" }
+}
+
+# 3. CRIAÇÃO DINÂMICA DAS APLICAÇÕES
+# Criamos uma aplicação separada no ArgoCD para cada pasta de serviço
+resource "kubernetes_manifest" "togglemaster_apps" {
+  for_each = toset(["auth", "flag", "targeting", "evaluation", "analytics"])
+
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "togglemaster-${each.key}"
+      namespace = "argocd"
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = "https://github.com/fdaltro/togglemaster-gitops.git"
+        targetRevision = "HEAD"
+        # APONTAMENTO CORRETO: apps/analytics, apps/auth, etc.
+        path           = "apps/${each.key}" 
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "togglemaster"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = ["CreateNamespace=false"]
+      }
+    }
   }
 
-  # Desabilita o HTTPS para evitar problemas de certificado auto-assinado no teste inicial
-  set {
-    name  = "server.extraArgs"
-    value = "{--insecure}"
-  }
+  depends_on = [helm_release.argocd]
 }
