@@ -39,3 +39,15 @@ module "argocd" {
   source     = "./modules/argocd"
   depends_on = [module.eks] # Garante que o cluster exista antes do Helm
 }
+
+# 7. Configurações de Aplicativos no Kubernetes
+module "k8s_config" {
+  source          = "./modules/k8s_config"
+  region          = var.region
+  rds_endpoints   = module.database.rds_endpoints
+  redis_endpoint  = module.database.redis_endpoint
+  sqs_queue_url   = module.sqs.sqs_queue_url
+
+  # Garante que o cluster e o ArgoCD existam primeiro
+  depends_on = [module.eks, module.argocd]
+}
