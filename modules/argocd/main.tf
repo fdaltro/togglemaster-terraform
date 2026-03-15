@@ -1,8 +1,11 @@
-# 1. Namespace e 2. Helm Release permanecem iguais...
+# 1. Criação do Namespace para o ArgoCD 
 resource "kubernetes_namespace" "argocd" {
-  metadata { name = "argocd" }
+  metadata {
+    name = "argocd"
+  }
 }
 
+# 2. Instalação do ArgoCD via Helm 
 resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
@@ -10,12 +13,20 @@ resource "helm_release" "argocd" {
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   version    = "7.7.1"
 
-  set { name = "server.service.type", value = "LoadBalancer" }
-  set { name = "server.extraArgs", value = "{--insecure}" }
+  # CORREÇÃO: Argumentos devem estar em linhas separadas
+  set {
+    name  = "server.service.type"
+    value = "LoadBalancer"
+  }
+
+  set {
+    name  = "server.extraArgs"
+    value = "{--insecure}" # [cite: 2]
+  }
 }
 
 # 3. CRIAÇÃO DINÂMICA DAS APLICAÇÕES
-# Criamos uma aplicação separada no ArgoCD para cada pasta de serviço
+# Criamos uma aplicação no ArgoCD para cada pasta de serviço que você organizou
 resource "kubernetes_manifest" "togglemaster_apps" {
   for_each = toset(["auth", "flag", "targeting", "evaluation", "analytics"])
 
@@ -31,8 +42,8 @@ resource "kubernetes_manifest" "togglemaster_apps" {
       source = {
         repoURL        = "https://github.com/fdaltro/togglemaster-gitops.git"
         targetRevision = "HEAD"
-        # APONTAMENTO CORRETO: apps/analytics, apps/auth, etc.
-        path           = "apps/${each.key}" 
+        # Agora o path aponta corretamente para apps/analytics, apps/auth, etc.
+        path           = "apps/${each.key}"
       }
       destination = {
         server    = "https://kubernetes.default.svc"
@@ -48,5 +59,6 @@ resource "kubernetes_manifest" "togglemaster_apps" {
     }
   }
 
+  # Garante que o ArgoCD e seus CRDs existam antes de criar as Apps
   depends_on = [helm_release.argocd]
 }
