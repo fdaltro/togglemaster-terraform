@@ -11,7 +11,8 @@ jobs:
     name: Terraform Plan & Apply
     runs-on: ubuntu-latest
     
-    # Mapeamento dos segredos do GitHub para variáveis do Terraform (TF_VAR_)
+    # Fazemos o "link" das variáveis que a Action da AWS já configurou 
+    # para as variáveis que o seu Terraform espera.
     env:
       TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
       TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -22,27 +23,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Configuração das credenciais dinâmicas para o Provedor AWS autenticar
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }} # Usando o segredo em vez de fixar us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Inicializa o backend no seu bucket S3 
       - name: Terraform Init
         run: terraform init
 
-      # Gera o plano de execução para conferência 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
 
-      # Aplica as mudanças apenas em pushes para a branch main
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan
