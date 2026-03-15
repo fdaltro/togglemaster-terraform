@@ -46,7 +46,7 @@ module "k8s_config" {
   region          = var.region
   rds_endpoints   = module.database.rds_endpoints
   redis_endpoint  = module.database.redis_endpoint
-  sqs_queue_url   = module.sqs.sqs_queue_url
+  sqs_queue_url   = module.sqs.sqs_url 
 
   # Garante que o cluster e o ArgoCD existam primeiro
   depends_on = [module.eks, module.argocd]
