@@ -1,10 +1,19 @@
 # ==========================================================
-# CONFIGURAÇÕES DO SERVIÇO: ANALYTICS
+# 1. DEFINIÇÃO DO NAMESPACE
+# ==========================================================
+resource "kubernetes_namespace" "togglemaster" {
+  metadata {
+    name = "togglemaster"
+  }
+}
+
+# ==========================================================
+# 2. CONFIGURAÇÕES DO SERVIÇO: ANALYTICS
 # ==========================================================
 resource "kubernetes_config_map" "analytics_config" {
   metadata {
     name      = "analytics-config"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -16,12 +25,12 @@ resource "kubernetes_config_map" "analytics_config" {
 }
 
 # ==========================================================
-# CONFIGURAÇÕES DO SERVIÇO: AUTH
+# 3. CONFIGURAÇÕES DO SERVIÇO: AUTH
 # ==========================================================
 resource "kubernetes_config_map" "auth_config" {
   metadata {
     name      = "auth-config"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -32,7 +41,7 @@ resource "kubernetes_config_map" "auth_config" {
 resource "kubernetes_secret" "auth_secret" {
   metadata {
     name      = "auth-secret"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -44,12 +53,12 @@ resource "kubernetes_secret" "auth_secret" {
 }
 
 # ==========================================================
-# CONFIGURAÇÕES DO SERVIÇO: EVALUATION
+# 4. CONFIGURAÇÕES DO SERVIÇO: EVALUATION
 # ==========================================================
 resource "kubernetes_config_map" "evaluation_config" {
   metadata {
     name      = "evaluation-config"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -66,7 +75,7 @@ resource "kubernetes_config_map" "evaluation_config" {
 resource "kubernetes_secret" "evaluation_secret" {
   metadata {
     name      = "evaluation-secret"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -77,12 +86,12 @@ resource "kubernetes_secret" "evaluation_secret" {
 }
 
 # ==========================================================
-# CONFIGURAÇÕES DO SERVIÇO: FLAGS
+# 5. CONFIGURAÇÕES DO SERVIÇO: FLAGS
 # ==========================================================
 resource "kubernetes_config_map" "flag_config" {
   metadata {
     name      = "flag-service-config"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -94,7 +103,7 @@ resource "kubernetes_config_map" "flag_config" {
 resource "kubernetes_secret" "flag_secret" {
   metadata {
     name      = "flag-service-secret"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -106,12 +115,12 @@ resource "kubernetes_secret" "flag_secret" {
 }
 
 # ==========================================================
-# CONFIGURAÇÕES DO SERVIÇO: TARGETING
+# 6. CONFIGURAÇÕES DO SERVIÇO: TARGETING
 # ==========================================================
 resource "kubernetes_config_map" "targeting_config" {
   metadata {
     name      = "targeting-service-config"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
@@ -123,7 +132,7 @@ resource "kubernetes_config_map" "targeting_config" {
 resource "kubernetes_secret" "targeting_secret" {
   metadata {
     name      = "targeting-db-secret"
-    namespace = "togglemaster"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
   }
 
   data = {
