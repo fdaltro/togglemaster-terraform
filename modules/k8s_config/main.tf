@@ -38,6 +38,7 @@ resource "kubernetes_config_map" "analytics_config" {
 
   data = {
     AWS_SQS_URL        = var.sqs_queue_url
+    AWS_REGION         = "us-east-1"
     AWS_DYNAMODB_TABLE = "ToggleMasterAnalytics"
     AUTH_SERVICE_URL   = "http://auth-service:8001"
     PORT               = "8005"
@@ -84,7 +85,7 @@ resource "kubernetes_config_map" "evaluation_config" {
   data = {
     REDIS_URL             = "redis://${var.redis_endpoint}:6379"
     AWS_SQS_URL           = var.sqs_queue_url
-    AWS_REGION            = var.region
+    AWS_REGION            = "us-east-1"
     AUTH_SERVICE_URL      = "http://auth-service:8001"
     FLAG_SERVICE_URL      = "http://flag-service:8002"
     TARGETING_SERVICE_URL = "http://targeting-service:8003"
