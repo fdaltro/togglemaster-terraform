@@ -1,5 +1,5 @@
 # ==========================================================
-# 1. DEFINIÇÃO DO NAMESPACE
+# 1. CRIAÇÃO DO NAMESPACE
 # ==========================================================
 resource "kubernetes_namespace" "togglemaster" {
   metadata {
@@ -8,7 +8,28 @@ resource "kubernetes_namespace" "togglemaster" {
 }
 
 # ==========================================================
-# 2. CONFIGURAÇÕES DO SERVIÇO: ANALYTICS
+# 2. CREDENCIAIS AWS (ACADEMY)
+# Criado para suprir a dependência do secretRef no deployment.yaml
+# ==========================================================
+resource "kubernetes_secret" "aws_credentials" {
+  metadata {
+    name      = "aws-credentials"
+    namespace = kubernetes_namespace.togglemaster.metadata[0].name
+  }
+
+  # Mapeia os segredos do GitHub para as chaves que a aplicação espera
+  data = {
+    AWS_ACCESS_KEY_ID     = var.aws_access_key
+    AWS_SECRET_ACCESS_KEY = var.aws_secret_key
+    AWS_SESSION_TOKEN     = var.aws_session_token
+    AWS_REGION            = var.region
+  }
+
+  type = "Opaque"
+}
+
+# ==========================================================
+# 3. SERVIÇO: ANALYTICS
 # ==========================================================
 resource "kubernetes_config_map" "analytics_config" {
   metadata {
@@ -25,7 +46,7 @@ resource "kubernetes_config_map" "analytics_config" {
 }
 
 # ==========================================================
-# 3. CONFIGURAÇÕES DO SERVIÇO: AUTH
+# 4. SERVIÇO: AUTH
 # ==========================================================
 resource "kubernetes_config_map" "auth_config" {
   metadata {
@@ -53,7 +74,7 @@ resource "kubernetes_secret" "auth_secret" {
 }
 
 # ==========================================================
-# 4. CONFIGURAÇÕES DO SERVIÇO: EVALUATION
+# 5. SERVIÇO: EVALUATION
 # ==========================================================
 resource "kubernetes_config_map" "evaluation_config" {
   metadata {
@@ -86,7 +107,7 @@ resource "kubernetes_secret" "evaluation_secret" {
 }
 
 # ==========================================================
-# 5. CONFIGURAÇÕES DO SERVIÇO: FLAGS
+# 6. SERVIÇO: FLAGS
 # ==========================================================
 resource "kubernetes_config_map" "flag_config" {
   metadata {
@@ -115,7 +136,7 @@ resource "kubernetes_secret" "flag_secret" {
 }
 
 # ==========================================================
-# 6. CONFIGURAÇÕES DO SERVIÇO: TARGETING
+# 7. SERVIÇO: TARGETING
 # ==========================================================
 resource "kubernetes_config_map" "targeting_config" {
   metadata {
