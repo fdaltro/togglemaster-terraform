@@ -1,11 +1,11 @@
-# 1. Criação do Namespace para o ArgoCD 
+# 1. Criação do Namespace para o ArgoCD
 resource "kubernetes_namespace" "argocd" {
   metadata {
     name = "argocd"
   }
 }
 
-# 2. Instalação do ArgoCD via Helm 
+# 2. Instalação do ArgoCD via Helm
 resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
@@ -13,7 +13,6 @@ resource "helm_release" "argocd" {
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   version    = "7.7.1"
 
-  # CORREÇÃO: Argumentos devem estar em linhas separadas
   set {
     name  = "server.service.type"
     value = "LoadBalancer"
@@ -21,12 +20,12 @@ resource "helm_release" "argocd" {
 
   set {
     name  = "server.extraArgs"
-    value = "{--insecure}" # [cite: 2]
+    value = "{--insecure}"
   }
 }
 
 # 3. CRIAÇÃO DINÂMICA DAS APLICAÇÕES
-# Criamos uma aplicação no ArgoCD para cada pasta de serviço que você organizou
+# Usamos kubectl_manifest para evitar erros de validação durante o 'plan'
 resource "kubectl_manifest" "togglemaster_apps" {
   for_each = toset(["auth", "flag", "targeting", "evaluation", "analytics"])
 
