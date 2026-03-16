@@ -27,38 +27,33 @@ resource "helm_release" "argocd" {
 
 # 3. CRIAÇÃO DINÂMICA DAS APLICAÇÕES
 # Criamos uma aplicação no ArgoCD para cada pasta de serviço que você organizou
-resource "kubernetes_manifest" "togglemaster_apps" {
+resource "kubectl_manifest" "togglemaster_apps" {
   for_each = toset(["auth", "flag", "targeting", "evaluation", "analytics"])
 
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = "togglemaster-${each.key}"
-      namespace = "argocd"
-    }
-    spec = {
-      project = "default"
-      source = {
-        repoURL        = "https://github.com/fdaltro/togglemaster-gitops.git"
-        targetRevision = "HEAD"
-        # Agora o path aponta corretamente para apps/analytics, apps/auth, etc.
-        path           = "apps/${each.key}"
-      }
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = "togglemaster"
-      }
-      syncPolicy = {
-        automated = {
-          prune    = true
-          selfHeal = true
-        }
-        syncOptions = ["CreateNamespace=false"]
-      }
-    }
-  }
+  yaml_body = <<YAML
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: togglemaster-${each.key}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/fdaltro/togglemaster-gitops.git"
+    targetRevision: HEAD
+    path: "apps/${each.key}"
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: togglemaster
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+YAML
 
-  # Garante que o ArgoCD e seus CRDs existam antes de criar as Apps
   depends_on = [helm_release.argocd]
 }
+
+http://googleusercontent.com/immersive_entry_chip/0
