@@ -55,5 +55,3 @@ YAML
 
   depends_on = [helm_release.argocd]
 }
-
-http://googleusercontent.com/immersive_entry_chip/0
