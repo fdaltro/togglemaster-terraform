@@ -1,3 +1,19 @@
+terraform {
+  required_providers {
+    # Isso avisa ao módulo que o 'kubectl' vem do gavinbunney, não da hashicorp
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = ">= 1.14.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+    }
+  }
+}
+
 # 1. Criação do Namespace para o ArgoCD
 resource "kubernetes_namespace" "argocd" {
   metadata {
