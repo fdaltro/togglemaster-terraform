@@ -20,10 +20,12 @@ module "eks" {
   cluster_name = var.cluster_name
   subnet_ids   = module.network.public_subnets
   lab_role_arn = "arn:aws:iam::174935208848:role/LabRole" # Seu ARN fornecido
-  data "aws_eks_cluster_auth" "cluster" {
+}
+
+data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name # Nome que vem do seu módulo EKS
 }
-}
+
 
 # 4. Mensageria (Requisito 4 da Fase 3)
 module "sqs" {
