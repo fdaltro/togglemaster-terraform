@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     
     # Fazemos o "link" das variáveis que a Action da AWS já configurou 
-    # para as variáveis que o seu Terraform espera.
+    # para as variáveis que o seu Terraform espera
     env:
       TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
       TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
