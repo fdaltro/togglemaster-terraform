@@ -41,7 +41,7 @@ module "sqs" {
 }
 
 # ==========================================================
-# 5. Repositórios de Imagens (Requisito 5 da Fase 3) [cite: 40]
+# 5. Repositórios de Imagens (Requisito 5 da Fase 3)
 # ==========================================================
 module "ecr" {
   source       = "./modules/ecr"
