@@ -58,7 +58,7 @@ module "argocd" {
 
 # ==========================================================
 # 7. Configurações de Aplicativos no Kubernetes
-# ==========================================================
+# ===========================================================
 module "k8s_config" {
   source          = "./modules/k8s_config"
   region          = var.region
