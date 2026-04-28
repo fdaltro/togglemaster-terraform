@@ -22,7 +22,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "togglemaster-terraform-state-grupox"
+    bucket = "togglemaster-terraform-state-fase4"
     key    = "fase3/terraform.tfstate"
     region = "us-east-1"
   }
