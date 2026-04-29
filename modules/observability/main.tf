@@ -25,6 +25,7 @@ resource "helm_release" "prometheus" {
   set {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
+  }
 }
 
 # Loki: Centralização e indexação de logs
