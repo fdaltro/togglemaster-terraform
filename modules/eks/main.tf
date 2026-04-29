@@ -16,9 +16,8 @@ resource "aws_eks_cluster" "main" {
 
 # Ativar Plugin EKS Add-ons para permitir discos EBS
 resource "aws_eks_addon" "ebs_csi" {
-  cluster_name                = module.eks.cluster_name
+  cluster_name                = aws_eks_cluster.main.name
   addon_name                  = "aws-ebs-csi-driver"
-  
   # O ARN LabRole
   service_account_role_arn    = "arn:aws:iam::504491092699:role/LabRole" 
   resolve_conflicts_on_update = "PRESERVE"
