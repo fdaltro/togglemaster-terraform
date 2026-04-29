@@ -25,7 +25,7 @@ module "eks" {
   source       = "./modules/eks"
   cluster_name = var.cluster_name
   subnet_ids   = module.network.public_subnets
-  lab_role_arn = "arn:aws:iam::504491092699:role/LabRole" # Seu ARN fornecido
+  lab_role_arn = "arn:aws:iam::504491092699:role/LabRole" # LAbRole
 }
 
 data "aws_eks_cluster_auth" "cluster" {
