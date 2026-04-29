@@ -21,6 +21,10 @@ resource "helm_release" "prometheus" {
     name  = "alertmanager.persistentVolume.enabled"
     value = "false"
   }
+
+  set {
+    name  = "pushgateway.persistentVolume.enabled"
+    value = "false"
 }
 
 # Loki: Centralização e indexação de logs
