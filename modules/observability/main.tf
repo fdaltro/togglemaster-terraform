@@ -6,7 +6,7 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
-# Prometheus: Coleta de métricas da infraestrutura e pods
+# Prometheus: Coleta de métricas da infraestrutura e pods.
 resource "helm_release" "prometheus" {
   name       = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
