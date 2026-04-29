@@ -71,3 +71,13 @@ module "k8s_config" {
 
   depends_on = [module.eks, module.argocd]
 }
+
+# ==========================================================
+# 8. Observabilidade
+# ===========================================================
+module "observability" {
+  source = "./modules/observability"
+
+  # Dependência explícita para evitar que o Helm tente instalar antes do cluster existir
+  depends_on = [module.eks] 
+}
