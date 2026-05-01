@@ -14,16 +14,6 @@ resource "aws_eks_cluster" "main" {
   }
 }
 
-/* # Ativar Plugin EKS Add-ons para permitir discos EBS
-resource "aws_eks_addon" "ebs_csi" {
-  cluster_name                = aws_eks_cluster.main.name
-  addon_name                  = "aws-ebs-csi-driver"
-  # O ARN LabRole
-  service_account_role_arn    = "arn:aws:iam::504491092699:role/LabRole" 
-  resolve_conflicts_on_update = "PRESERVE"
-}
-*/
- 
 # -----------------------------
 # ADD-ONS OFICIAIS DO EKS
 # -----------------------------
@@ -32,16 +22,8 @@ resource "aws_eks_addon" "vpc_cni" {
   cluster_name = aws_eks_cluster.main.name
   addon_name   = "vpc-cni"
 
-  resolve_conflicts_on_update = "PRESERVE"
-
-  depends_on = [aws_eks_cluster.main]
-}
-
-resource "aws_eks_addon" "coredns" {
-  cluster_name = aws_eks_cluster.main.name
-  addon_name   = "coredns"
-
-  resolve_conflicts_on_update = "PRESERVE"
+  # ALTERADO PARA OVERWRITE
+  resolve_conflicts_on_update = "OVERWRITE" 
 
   depends_on = [aws_eks_cluster.main]
 }
@@ -50,9 +32,21 @@ resource "aws_eks_addon" "kube_proxy" {
   cluster_name = aws_eks_cluster.main.name
   addon_name   = "kube-proxy"
 
-  resolve_conflicts_on_update = "PRESERVE"
+  # ALTERADO PARA OVERWRITE
+  resolve_conflicts_on_update = "OVERWRITE" 
 
   depends_on = [aws_eks_cluster.main]
+}
+
+resource "aws_eks_addon" "coredns" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "coredns"
+
+  # ALTERADO PARA OVERWRITE
+  resolve_conflicts_on_update = "OVERWRITE" 
+
+  # ALTERADO PARA DEPENDER DO NODE GROUP (MUITO IMPORTANTE)
+  depends_on = [aws_eks_node_group.main]
 }
 
 resource "aws_eks_addon" "ebs_csi" {
@@ -60,10 +54,13 @@ resource "aws_eks_addon" "ebs_csi" {
   addon_name               = "aws-ebs-csi-driver"
   service_account_role_arn = var.lab_role_arn
 
-  resolve_conflicts_on_update = "PRESERVE"
+  # ALTERADO PARA OVERWRITE
+  resolve_conflicts_on_update = "OVERWRITE" 
 
-  depends_on = [aws_eks_cluster.main]
+  # ALTERADO PARA DEPENDER DO NODE GROUP (MUITO IMPORTANTE)
+  depends_on = [aws_eks_node_group.main]
 }
+
 # Node Group (Trabalhadores)
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
