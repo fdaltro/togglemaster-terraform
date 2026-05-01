@@ -163,3 +163,24 @@ resource "kubernetes_secret" "targeting_secret" {
 
   type = "Opaque"
 }
+
+# ==========================================================
+# 8. CONFIGURAÇÃO DE ARMAZENAMENTO (STORAGE CLASS)
+# Resolve o erro: unbound immediate PersistentVolumeClaims
+# ==========================================================
+resource "kubernetes_storage_class" "ebs_gp3" {
+  metadata {
+    name = "gp3"
+    annotations = {
+      # Define esta classe como a padrão do cluster
+      "storageclass.kubernetes.io/is-default-class" = "true"
+    }
+  }
+  storage_provisioner    = "ebs.csi.aws.com"
+  reclaim_policy         = "Retain"
+  allow_volume_expansion = true
+  volume_binding_mode    = "WaitForFirstConsumer"
+  parameters = {
+    type = "gp3"
+  }
+}
