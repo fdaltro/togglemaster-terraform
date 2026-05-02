@@ -37,9 +37,19 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
+      # Passo de Plan apenas para visualização em Pull Requests
+      - name: Terraform Plan (Somente PR)
+        if: github.event_name == 'pull_request'
+        run: terraform plan
 
-      - name: Terraform Apply
+      # --------------------------------------------------------
+      # APPLY EM DUAS ETAPAS (A mágica do Bootstrap)
+      # --------------------------------------------------------
+      
+      - name: Terraform Apply - Etapa 1 (Bootstrap EKS)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -target=module.eks -auto-approve
+
+      - name: Terraform Apply - Etapa 2 (Configurações e Observabilidade)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
