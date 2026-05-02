@@ -11,39 +11,24 @@ resource "helm_release" "prometheus" {
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "prometheus"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600 # Aumentado para 10 minutos para dar tempo de baixar as imagens
 
-  # Ativando persistência para o servidor de métricas
+  # DESATIVANDO persistência para o servidor de métricas
   set {
     name  = "server.persistentVolume.enabled"
-    value = "true"
-  }
-  set {
-    name  = "server.persistentVolume.storageClass"
-    value = "gp2"
-  }
-  set {
-    name  = "server.persistentVolume.size"
-    value = "8Gi"
+    value = "false"
   }
 
-  # Ativando persistência para o Alertmanager
+  # DESATIVANDO persistência para o Alertmanager
   set {
     name  = "alertmanager.persistentVolume.enabled"
-    value = "true"
-  }
-  set {
-    name  = "alertmanager.persistentVolume.storageClass"
-    value = "gp2"
+    value = "false"
   }
 
-  # Ativando persistência para o Pushgateway
+  # DESATIVANDO persistência para o Pushgateway
   set {
     name  = "pushgateway.persistentVolume.enabled"
-    value = "true"
-  }
-  set {
-    name  = "pushgateway.persistentVolume.storageClass"
-    value = "gp2"
+    value = "false"
   }
 }
 
@@ -51,38 +36,29 @@ resource "helm_release" "prometheus" {
 resource "helm_release" "loki" {
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
-  chart      = "loki-stack" # Inclui Promtail para coleta automática
+  chart      = "loki-stack"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600
 
+  # DESATIVANDO persistência
   set {
     name  = "loki.persistence.enabled"
-    value = "true"
-  }
-  set {
-    name  = "loki.persistence.storageClass"
-    value = "gp2"
-  }
-  set {
-    name  = "loki.persistence.size"
-    value = "5Gi"
+    value = "false"
   }
 }
 
-# 4. Grafana: Dashboards e visualização de dados [cite: 34, 38]
+# 4. Grafana: Dashboards e visualização de dados
 resource "helm_release" "grafana" {
   name       = "grafana"
   repository = "https://grafana.github.io/helm-charts"
   chart      = "grafana"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600
 
-  # Ativando persistência para manter Dashboards criados [cite: 39]
+  # DESATIVANDO persistência para o Grafana
   set {
     name  = "persistence.enabled"
-    value = "true"
-  }
-  set {
-    name  = "persistence.storageClass"
-    value = "gp2"
+    value = "false"
   }
 
   set {
