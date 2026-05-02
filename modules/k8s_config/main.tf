@@ -9,7 +9,7 @@ resource "kubernetes_namespace" "togglemaster" {
 
 # ==========================================================
 # 2. CREDENCIAIS AWS (ACADEMY)
-# Criado para suprir a dependência do secretRef no deployment.yaml
+# Necessário para os serviços que usam SQS, DynamoDB ou S3
 # ==========================================================
 resource "kubernetes_secret" "aws_credentials" {
   metadata {
@@ -38,7 +38,7 @@ resource "kubernetes_config_map" "analytics_config" {
 
   data = {
     AWS_SQS_URL        = var.sqs_queue_url
-    AWS_REGION         = "us-east-1"
+    AWS_REGION         = var.region
     AWS_DYNAMODB_TABLE = "ToggleMasterAnalytics"
     AUTH_SERVICE_URL   = "http://auth-service:8001"
     PORT               = "8005"
@@ -85,7 +85,7 @@ resource "kubernetes_config_map" "evaluation_config" {
   data = {
     REDIS_URL             = "redis://${var.redis_endpoint}:6379"
     AWS_SQS_URL           = var.sqs_queue_url
-    AWS_REGION            = "us-east-1"
+    AWS_REGION            = var.region
     AUTH_SERVICE_URL      = "http://auth-service:8001"
     FLAG_SERVICE_URL      = "http://flag-service:8002"
     TARGETING_SERVICE_URL = "http://targeting-service:8003"
@@ -162,25 +162,4 @@ resource "kubernetes_secret" "targeting_secret" {
   }
 
   type = "Opaque"
-}
-
-# ==========================================================
-# 8. CONFIGURAÇÃO DE ARMAZENAMENTO (STORAGE CLASS)
-# Resolve o erro: unbound immediate PersistentVolumeClaims
-# ==========================================================
-resource "kubernetes_storage_class" "ebs_gp3" {
-  metadata {
-    name = "gp3"
-    annotations = {
-      # Define esta classe como a padrão do cluster
-      "storageclass.kubernetes.io/is-default-class" = "true"
-    }
-  }
-  storage_provisioner    = "ebs.csi.aws.com"
-  reclaim_policy         = "Retain"
-  allow_volume_expansion = true
-  volume_binding_mode    = "WaitForFirstConsumer"
-  parameters = {
-    type = "gp3"
-  }
 }
