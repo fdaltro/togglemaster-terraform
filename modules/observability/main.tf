@@ -11,24 +11,40 @@ resource "helm_release" "prometheus" {
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "prometheus"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  timeout    = 600 # Aumentado para 10 minutos para dar tempo de baixar as imagens
+  timeout    = 600
 
-  # DESATIVANDO persistência para o servidor de métricas
+  # Ativando persistência para o servidor de métricas com LOCAL PATH
   set {
     name  = "server.persistentVolume.enabled"
-    value = "false"
+    value = "true"
+  }
+  set {
+    name  = "server.persistentVolume.storageClass"
+    value = "local-path"
+  }
+  set {
+    name  = "server.persistentVolume.size"
+    value = "8Gi"
   }
 
-  # DESATIVANDO persistência para o Alertmanager
+  # Ativando persistência para o Alertmanager com LOCAL PATH
   set {
     name  = "alertmanager.persistentVolume.enabled"
-    value = "false"
+    value = "true"
+  }
+  set {
+    name  = "alertmanager.persistentVolume.storageClass"
+    value = "local-path"
   }
 
-  # DESATIVANDO persistência para o Pushgateway
+  # Ativando persistência para o Pushgateway com LOCAL PATH
   set {
     name  = "pushgateway.persistentVolume.enabled"
-    value = "false"
+    value = "true"
+  }
+  set {
+    name  = "pushgateway.persistentVolume.storageClass"
+    value = "local-path"
   }
 }
 
@@ -40,10 +56,17 @@ resource "helm_release" "loki" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # DESATIVANDO persistência
   set {
     name  = "loki.persistence.enabled"
-    value = "false"
+    value = "true"
+  }
+  set {
+    name  = "loki.persistence.storageClass"
+    value = "local-path"
+  }
+  set {
+    name  = "loki.persistence.size"
+    value = "5Gi"
   }
 }
 
@@ -55,10 +78,13 @@ resource "helm_release" "grafana" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # DESATIVANDO persistência para o Grafana
   set {
     name  = "persistence.enabled"
-    value = "false"
+    value = "true"
+  }
+  set {
+    name  = "persistence.storageClass"
+    value = "local-path"
   }
 
   set {

@@ -79,5 +79,5 @@ module "observability" {
   source = "./modules/observability"
 
   # Dependência explícita para evitar que o Helm tente instalar antes do cluster existir
-  depends_on = [module.eks] 
+  depends_on = [module.eks, module.k8s_config] 
 }
