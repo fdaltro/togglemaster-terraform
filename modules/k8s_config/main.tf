@@ -84,7 +84,7 @@ resource "kubernetes_secret" "auth_secret" {
 
 # ==========================================================
 # 5. SERVIÇO: EVALUATION
-# ==========================================================
+# ===========================================================
 resource "kubernetes_config_map" "evaluation_config" {
   metadata {
     name      = "evaluation-config"
