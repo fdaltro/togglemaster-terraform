@@ -172,6 +172,7 @@ resource "kubernetes_secret" "targeting_secret" {
 
   type = "Opaque"
 }
+
 # ==========================================================
 # 8. LOCAL PATH PROVISIONER (Rancher)
 # Simulador de discos persistentes usando armazenamento do Node
