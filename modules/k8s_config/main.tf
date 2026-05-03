@@ -27,9 +27,9 @@ resource "kubernetes_secret" "aws_credentials" {
   type = "Opaque"
 }
 
-# ==========================================================
+# =========================================================
 # 3. SERVIÇO: ANALYTICS
-# ==========================================================
+# =========================================================
 resource "kubernetes_config_map" "analytics_config" {
   metadata {
     name      = "analytics-config"
