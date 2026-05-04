@@ -16,17 +16,17 @@ resource "helm_release" "prometheus" {
   # Desativando persistência para evitar erros de PVC no AWS Academy
   set {
     name  = "server.persistentVolume.enabled"
-    value = "false"
+    value = "true"
   }
 
   set {
     name  = "alertmanager.persistentVolume.enabled"
-    value = "false"
+    value = "true"
   }
 
   set {
     name  = "pushgateway.persistentVolume.enabled"
-    value = "false"
+    value = "true"
   }
 
   # RESOLUÇÃO DO ERRO: Injeção de configuração básica para o Alertmanager não dar Crash
@@ -65,7 +65,7 @@ resource "helm_release" "loki" {
 
   set {
     name  = "loki.persistence.enabled"
-    value = "false"
+    value = "true"
   }
 }
 
@@ -79,7 +79,7 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "persistence.enabled"
-    value = "false"
+    value = "true"
   }
 
   set {
