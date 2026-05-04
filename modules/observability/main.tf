@@ -20,7 +20,7 @@ resource "helm_release" "prometheus" {
   }
   set {
     name  = "server.persistentVolume.storageClass"
-    value = "local-path"
+    value = "gp2"
   }
   set {
     name  = "server.persistentVolume.size"
@@ -34,7 +34,7 @@ resource "helm_release" "prometheus" {
   }
   set {
     name  = "alertmanager.persistentVolume.storageClass"
-    value = "local-path"
+    value = "gp2"
   }
 
   # Ativando persistência para o Pushgateway com LOCAL PATH
@@ -44,7 +44,7 @@ resource "helm_release" "prometheus" {
   }
   set {
     name  = "pushgateway.persistentVolume.storageClass"
-    value = "local-path"
+    value = "gp2"
   }
 }
 
@@ -62,7 +62,7 @@ resource "helm_release" "loki" {
   }
   set {
     name  = "loki.persistence.storageClass"
-    value = "local-path"
+    value = "gp2"
   }
   set {
     name  = "loki.persistence.size"
@@ -84,7 +84,7 @@ resource "helm_release" "grafana" {
   }
   set {
     name  = "persistence.storageClass"
-    value = "local-path"
+    value = "gp2"
   }
 
   set {
