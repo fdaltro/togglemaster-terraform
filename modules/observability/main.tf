@@ -16,7 +16,7 @@ resource "helm_release" "prometheus" {
   # Ativando persistência para o servidor de métricas com LOCAL PATH
   set {
     name  = "server.persistentVolume.enabled"
-    value = "true"
+    value = "false"
   }
   set {
     name  = "server.persistentVolume.storageClass"
@@ -30,7 +30,7 @@ resource "helm_release" "prometheus" {
   # Ativando persistência para o Alertmanager com LOCAL PATH
   set {
     name  = "alertmanager.persistentVolume.enabled"
-    value = "true"
+    value = "false"
   }
   set {
     name  = "alertmanager.persistentVolume.storageClass"
@@ -40,7 +40,7 @@ resource "helm_release" "prometheus" {
   # Ativando persistência para o Pushgateway com LOCAL PATH
   set {
     name  = "pushgateway.persistentVolume.enabled"
-    value = "true"
+    value = "false"
   }
   set {
     name  = "pushgateway.persistentVolume.storageClass"
@@ -58,7 +58,7 @@ resource "helm_release" "loki" {
 
   set {
     name  = "loki.persistence.enabled"
-    value = "true"
+    value = "false"
   }
   set {
     name  = "loki.persistence.storageClass"
@@ -80,7 +80,7 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "persistence.enabled"
-    value = "true"
+    value = "false"
   }
   set {
     name  = "persistence.storageClass"
