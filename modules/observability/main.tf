@@ -5,7 +5,7 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
-# 2. Prometheus: Coleta de métricas da infraestrutura e pods
+# 2. Prometheus: Coleta de métricas e Alertmanager
 resource "helm_release" "prometheus" {
   name       = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -13,42 +13,49 @@ resource "helm_release" "prometheus" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Ativando persistência para o servidor de métricas com LOCAL PATH
+  # Desativando persistência para evitar erros de PVC no AWS Academy
   set {
     name  = "server.persistentVolume.enabled"
     value = "false"
   }
-  set {
-    name  = "server.persistentVolume.storageClass"
-    value = "gp2"
-  }
-  set {
-    name  = "server.persistentVolume.size"
-    value = "8Gi"
-  }
 
-  # Ativando persistência para o Alertmanager com LOCAL PATH
   set {
     name  = "alertmanager.persistentVolume.enabled"
     value = "false"
   }
-  set {
-    name  = "alertmanager.persistentVolume.storageClass"
-    value = "gp2"
-  }
 
-  # Ativando persistência para o Pushgateway com LOCAL PATH
   set {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
   }
-  set {
-    name  = "pushgateway.persistentVolume.storageClass"
-    value = "gp2"
-  }
+
+  # RESOLUÇÃO DO ERRO: Injeção de configuração básica para o Alertmanager não dar Crash
+  values = [
+    yamlencode({
+      alertmanager = {
+        config = {
+          global = {
+            resolve_timeout = "5m"
+          }
+          route = {
+            group_by = ["alertname"]
+            group_wait = "10s"
+            group_interval = "10s"
+            repeat_interval = "1h"
+            receiver = "default-receiver"
+          }
+          receivers = [
+            {
+              name = "default-receiver"
+            }
+          ]
+        }
+      }
+    })
+  ]
 }
 
-# 3. Loki: Centralização e indexação de logs
+# 3. Loki: Agregador de Logs
 resource "helm_release" "loki" {
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
@@ -60,17 +67,9 @@ resource "helm_release" "loki" {
     name  = "loki.persistence.enabled"
     value = "false"
   }
-  set {
-    name  = "loki.persistence.storageClass"
-    value = "gp2"
-  }
-  set {
-    name  = "loki.persistence.size"
-    value = "5Gi"
-  }
 }
 
-# 4. Grafana: Dashboards e visualização de dados
+# 4. Grafana: Dashboards e Visualização
 resource "helm_release" "grafana" {
   name       = "grafana"
   repository = "https://grafana.github.io/helm-charts"
@@ -81,10 +80,6 @@ resource "helm_release" "grafana" {
   set {
     name  = "persistence.enabled"
     value = "false"
-  }
-  set {
-    name  = "persistence.storageClass"
-    value = "gp2"
   }
 
   set {
@@ -111,7 +106,6 @@ resource "helm_release" "grafana" {
               type      = "loki"
               url       = "http://loki.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:3100"
               access    = "proxy"
-              isDefault = false
             }
           ]
         }
