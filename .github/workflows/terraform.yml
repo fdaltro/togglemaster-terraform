@@ -43,13 +43,8 @@ jobs:
         run: terraform plan
 
       # --------------------------------------------------------
-      # APPLY EM DUAS ETAPAS (A mágica do Bootstrap)
+      # APPLY EM ETAPA UNICA
       # --------------------------------------------------------
-      
-      - name: Terraform Apply - Etapa 1 (Bootstrap EKS)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -target=module.eks -auto-approve
-
-      - name: Terraform Apply - Etapa 2 (Configurações e Observabilidade)
+      - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve
