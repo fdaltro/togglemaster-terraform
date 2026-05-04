@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = ">= 1.14.0"
-    }
-  }
-}
-
 # ==========================================================
 # 1. CRIAÇÃO DO NAMESPACE
 # ==========================================================
@@ -171,44 +162,4 @@ resource "kubernetes_secret" "targeting_secret" {
   }
 
   type = "Opaque"
-}
-
-# ==========================================================
-# 8. LOCAL PATH PROVISIONER (Rancher)
-# Simulador de discos persistentes usando armazenamento do Node
-# ==========================================================
-
-# 1. Baixa o manifesto YAML oficial (versão fixada para evitar quebras)
-data "http" "local_path_yaml" {
-  url = "https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.30/deploy/local-path-storage.yaml"
-}
-
-# 2. O manifesto da Rancher tem vários recursos juntos. 
-# Esse bloco divide o YAML em partes que o Terraform entende.
-data "kubectl_file_documents" "local_path_docs" {
-  content = data.http.local_path_yaml.response_body
-}
-
-# 3. Instala todos os componentes no cluster usando o provider kubectl
-resource "kubectl_manifest" "local_path_provisioner" {
-  for_each  = data.kubectl_file_documents.local_path_docs.manifests
-  yaml_body = each.value
-}
-
-# 4. Patch: Avisa ao Kubernetes que este é o provisionador Padrão (Default)
-# Isso substitui o comando "kubectl patch"
-resource "kubernetes_annotations" "local_path_default" {
-  api_version = "storage.k8s.io/v1"
-  kind        = "StorageClass"
-
-  metadata {
-    name = "local-path"
-  }
-
-  annotations = {
-    "storageclass.kubernetes.io/is-default-class" = "true"
-  }
-
-  # Garante que a anotação só seja feita APÓS a classe ser criada pelo manifesto
-  depends_on = [kubectl_manifest.local_path_provisioner]
 }
