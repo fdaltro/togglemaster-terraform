@@ -42,13 +42,10 @@ resource "aws_eks_node_group" "main" {
 # 3. INSTALAÇÃO DE ADD-ONS
 # ==========================================================
 
-resource "aws_eks_addon" "ebs_csi" {
-  cluster_name = aws_eks_cluster.main.name
-  addon_name   = "aws-ebs-csi-driver"
-  
-  # Preserva configurações padrão do add-on
-  resolve_conflicts_on_update = "PRESERVE" 
-  lifecycle {
-    ignore_changes = all
-  }
-}*/
+resource "aws_eks_addon" "local_instance_csi" {
+  cluster_name                = aws_eks_cluster.main.name
+  addon_name                  = "aws-ec2-local-instance-store-csi-driver"
+  addon_version               = "v1.0.0-eksbuild.1"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+}
