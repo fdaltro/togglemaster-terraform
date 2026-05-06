@@ -5,7 +5,7 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
-# 2. Prometheus: Coleta de métricas e Alertmanager
+# 2. Prometheus: Coleta de métricas (Alertmanager desativado aqui)
 resource "helm_release" "prometheus" {
   name       = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -13,30 +13,25 @@ resource "helm_release" "prometheus" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Desativa persistência do Servidor Principal
+  # Desativa persistência do Servidor Principal para rodar em t3.medium
   set {
     name  = "server.persistentVolume.enabled"
     value = "false"
   }
 
-  # CONFIGURAÇÃO DO ALERTMANAGER: Desativa PVC e força uso de EmptyDir (Armazenamento em Memória)
+  # DESATIVAÇÃO DO ALERTMANAGER VIA HELM
+  # Necessário para evitar que o Helm crie um StatefulSet que exige PVC
   set {
-    name  = "alertmanager.persistentVolume.enabled"
+    name  = "alertmanager.enabled"
     value = "false"
   }
 
-  set {
-    name  = "alertmanager.persistentVolume.type"
-    value = "emptyDir"
-  }
-
-  # Desativa persistência do Pushgateway
   set {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
   }
 
-  # Injeção de configuração básica para o Alertmanager
+  # Injeção de configuração do Alertmanager no ConfigMap (será usado pelo deploy manual)
   values = [
     yamlencode({
       alertmanager = {
@@ -70,7 +65,6 @@ resource "helm_release" "loki" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Loki configurado para usar armazenamento efêmero
   set {
     name  = "loki.persistence.enabled"
     value = "false"
@@ -85,7 +79,6 @@ resource "helm_release" "grafana" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Desativa persistência do Grafana
   set {
     name  = "persistence.enabled"
     value = "false"
@@ -96,7 +89,6 @@ resource "helm_release" "grafana" {
     value = "admin123"
   }
 
-  # Configuração automática de Data Sources (Prometheus e Loki)
   values = [
     yamlencode({
       datasources = {
@@ -121,4 +113,97 @@ resource "helm_release" "grafana" {
       }
     })
   ]
+}
+
+# ==========================================================
+# 5. INSTALAÇÃO MANUAL DO ALERTMANAGER (DEPLOYMENT + EMPTYDIR)
+# ==========================================================
+
+resource "kubernetes_deployment" "alertmanager_manual" {
+  metadata {
+    name      = "alertmanager-manual"
+    namespace = kubernetes_namespace.monitoring.metadata[0].name
+    labels = {
+      app = "alertmanager-manual"
+    }
+  }
+
+  spec {
+    replicas = 1
+    selector {
+      match_labels = {
+        app = "alertmanager-manual"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "alertmanager-manual"
+        }
+      }
+
+      spec {
+        container {
+          name  = "alertmanager"
+          image = "quay.io/prometheus/alertmanager:v0.32.1"
+          args  = [
+            "--config.file=/etc/alertmanager/alertmanager.yml",
+            "--storage.path=/alertmanager"
+          ]
+
+          port {
+            container_port = 9093
+            name           = "http"
+          }
+
+          volume_mount {
+            name       = "config-volume"
+            mount_path = "/etc/alertmanager"
+          }
+
+          volume_mount {
+            name       = "storage-volume"
+            mount_path = "/alertmanager"
+          }
+        }
+
+        # Monta o ConfigMap que o Helm criou mesmo com o alertmanager.enabled=false
+        volume {
+          name = "config-volume"
+          config_map {
+            name = "prometheus-alertmanager"
+          }
+        }
+
+        # Armazenamento em memória (sem PVC)
+        volume {
+          name = "storage-volume"
+          empty_dir {}
+        }
+      }
+    }
+  }
+}
+
+# Serviço para o Alertmanager Manual
+resource "kubernetes_service" "alertmanager_manual_svc" {
+  metadata {
+    name      = "alertmanager-manual-svc"
+    namespace = kubernetes_namespace.monitoring.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "alertmanager-manual"
+    }
+
+    port {
+      port        = 9093
+      target_port = 9093
+      name        = "http"
+    }
+
+    type = "ClusterIP"
+  }
 }
