@@ -13,23 +13,30 @@ resource "helm_release" "prometheus" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Persistência desativada para garantir que os pods subam nas instâncias t3.medium do Academy
+  # Desativa persistência do Servidor Principal
   set {
     name  = "server.persistentVolume.enabled"
     value = "false"
   }
 
+  # CONFIGURAÇÃO DO ALERTMANAGER: Desativa PVC e força uso de EmptyDir (Armazenamento em Memória)
   set {
     name  = "alertmanager.persistentVolume.enabled"
     value = "false"
   }
 
   set {
+    name  = "alertmanager.persistentVolume.type"
+    value = "emptyDir"
+  }
+
+  # Desativa persistência do Pushgateway
+  set {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
   }
 
-  # Injeção de configuração básica para evitar o erro de arquivo ausente no Alertmanager
+  # Injeção de configuração básica para o Alertmanager
   values = [
     yamlencode({
       alertmanager = {
@@ -78,6 +85,7 @@ resource "helm_release" "grafana" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
+  # Desativa persistência do Grafana
   set {
     name  = "persistence.enabled"
     value = "false"
