@@ -5,18 +5,7 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
-# 2. StorageClass para o Driver de Instância Local (EC2 Instance Store)
-# Esta classe utiliza o driver que você ativou manualmente no console
-resource "kubernetes_storage_class" "local_instance_sc" {
-  metadata {
-    name = "local-instance-sc"
-  }
-  storage_provisioner    = "instance-store.csi.aws.com" 
-  reclaim_policy         = "Delete"
-  volume_binding_mode    = "WaitForFirstConsumer"
-}
-
-# 3. Prometheus: Coleta de métricas e Alertmanager
+# 2. Prometheus: Coleta de métricas e Alertmanager
 resource "helm_release" "prometheus" {
   name       = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -24,33 +13,20 @@ resource "helm_release" "prometheus" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Persistência do Prometheus Server usando o driver local
+  # Persistência desativada para garantir que os pods subam nas instâncias t3.medium do Academy
   set {
     name  = "server.persistentVolume.enabled"
-    value = "true"
-  }
-  set {
-    name  = "server.persistentVolume.storageClass"
-    value = "local-instance-sc"
-  }
-  set {
-    name  = "server.persistentVolume.size"
-    value = "8Gi"
+    value = "false"
   }
 
-  # Persistência do Alertmanager usando o driver local
   set {
     name  = "alertmanager.persistentVolume.enabled"
-    value = "true"
-  }
-  set {
-    name  = "alertmanager.persistentVolume.storageClass"
-    value = "local-instance-sc"
+    value = "false"
   }
 
   set {
     name  = "pushgateway.persistentVolume.enabled"
-    value = "true"
+    value = "false"
   }
 
   # Injeção de configuração básica para evitar o erro de arquivo ausente no Alertmanager
@@ -79,7 +55,7 @@ resource "helm_release" "prometheus" {
   ]
 }
 
-# 4. Loki: Agregador de Logs
+# 3. Loki: Agregador de Logs
 resource "helm_release" "loki" {
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
@@ -87,21 +63,14 @@ resource "helm_release" "loki" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
+  # Loki configurado para usar armazenamento efêmero
   set {
     name  = "loki.persistence.enabled"
-    value = "true"
-  }
-  set {
-    name  = "loki.persistence.storageClass"
-    value = "local-instance-sc"
-  }
-  set {
-    name  = "loki.persistence.size"
-    value = "5Gi"
+    value = "false"
   }
 }
 
-# 5. Grafana: Dashboards e Visualização
+# 4. Grafana: Dashboards e Visualização
 resource "helm_release" "grafana" {
   name       = "grafana"
   repository = "https://grafana.github.io/helm-charts"
@@ -111,11 +80,7 @@ resource "helm_release" "grafana" {
 
   set {
     name  = "persistence.enabled"
-    value = "true"
-  }
-  set {
-    name  = "persistence.storageClass"
-    value = "local-instance-sc"
+    value = "false"
   }
 
   set {
@@ -123,7 +88,7 @@ resource "helm_release" "grafana" {
     value = "admin123"
   }
 
-  # Configuração automática de Data Sources
+  # Configuração automática de Data Sources (Prometheus e Loki)
   values = [
     yamlencode({
       datasources = {
