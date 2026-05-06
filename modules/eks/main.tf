@@ -37,6 +37,7 @@ resource "aws_eks_node_group" "main" {
     Name = "${var.cluster_name}-node"
   }
 }
+/*
 # ==========================================================
 # 3. INSTALAÇÃO DE ADD-ONS
 # ==========================================================
@@ -48,3 +49,4 @@ resource "aws_eks_addon" "local_instance_csi" {
   resolve_conflicts_on_update = "OVERWRITE"
 
 }
+*/
