@@ -1,11 +1,11 @@
-# 1. Namespace isolado para a stack de monitoramento
+# 1. Namespace isolado para a stack de monitorização
 resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = "observabilidade"
   }
 }
 
-# 2. Prometheus: Coleta de métricas (Alertmanager desativado aqui)
+# 2. Prometheus: Recolha de métricas (Alertmanager desativado no Helm)
 resource "helm_release" "prometheus" {
   name       = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -20,7 +20,7 @@ resource "helm_release" "prometheus" {
   }
 
   # DESATIVAÇÃO DO ALERTMANAGER VIA HELM
-  # Necessário para evitar que o Helm crie um StatefulSet que exige PVC
+  # Evita que o Helm crie um StatefulSet que exige PVC
   set {
     name  = "alertmanager.enabled"
     value = "false"
@@ -30,31 +30,6 @@ resource "helm_release" "prometheus" {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
   }
-
-  # Injeção de configuração do Alertmanager no ConfigMap (será usado pelo deploy manual)
-  values = [
-    yamlencode({
-      alertmanager = {
-        config = {
-          global = {
-            resolve_timeout = "5m"
-          }
-          route = {
-            group_by = ["alertname"]
-            group_wait = "10s"
-            group_interval = "10s"
-            repeat_interval = "1h"
-            receiver = "default-receiver"
-          }
-          receivers = [
-            {
-              name = "default-receiver"
-            }
-          ]
-        }
-      }
-    })
-  ]
 }
 
 # 3. Loki: Agregador de Logs
@@ -116,10 +91,42 @@ resource "helm_release" "grafana" {
 }
 
 # ==========================================================
-# 5. INSTALAÇÃO MANUAL DO ALERTMANAGER (DEPLOYMENT + EMPTYDIR)
+# 5. CONFIGURAÇÃO MANUAL DO ALERTMANAGER (SOLUÇÃO DE CONTORNO)
 # ==========================================================
 
+# Cria o ConfigMap que o Helm deixou de criar ao ser desativado
+resource "kubernetes_config_map" "alertmanager_config" {
+  metadata {
+    name      = "prometheus-alertmanager"
+    namespace = kubernetes_namespace.monitoring.metadata[0].name
+  }
+
+  data = {
+    "alertmanager.yml" = yamlencode({
+      global = {
+        resolve_timeout = "5m"
+      }
+      route = {
+        group_by        = ["alertname"]
+        group_wait      = "10s"
+        group_interval  = "10s"
+        repeat_interval = "1h"
+        receiver        = "default-receiver"
+      }
+      receivers = [
+        {
+          name = "default-receiver"
+        }
+      ]
+    })
+  }
+}
+
+# Deployment manual usando emptyDir para garantir status 'Running'
 resource "kubernetes_deployment" "alertmanager_manual" {
+  # Garante que o ConfigMap existe antes de tentar montar o volume
+  depends_on = [kubernetes_config_map.alertmanager_config]
+
   metadata {
     name      = "alertmanager-manual"
     namespace = kubernetes_namespace.monitoring.metadata[0].name
@@ -168,7 +175,6 @@ resource "kubernetes_deployment" "alertmanager_manual" {
           }
         }
 
-        # Monta o ConfigMap que o Helm criou mesmo com o alertmanager.enabled=false
         volume {
           name = "config-volume"
           config_map {
@@ -176,7 +182,7 @@ resource "kubernetes_deployment" "alertmanager_manual" {
           }
         }
 
-        # Armazenamento em memória (sem PVC)
+        # Armazenamento efêmero para evitar erros de PVC
         volume {
           name = "storage-volume"
           empty_dir {}
@@ -186,7 +192,7 @@ resource "kubernetes_deployment" "alertmanager_manual" {
   }
 }
 
-# Serviço para o Alertmanager Manual
+# Serviço para expor o Alertmanager manual
 resource "kubernetes_service" "alertmanager_manual_svc" {
   metadata {
     name      = "alertmanager-manual-svc"
