@@ -259,6 +259,12 @@ resource "helm_release" "otel_collector" {
     value = "otel/opentelemetry-collector-contrib"
   }
 
+  # ---> Fixando uma versão que possui o plugin do Loki <---
+  set {
+    name  = "image.tag"
+    value = "0.104.0"
+  }
+
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
   depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
