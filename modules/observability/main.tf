@@ -256,12 +256,14 @@ resource "helm_release" "otel_collector" {
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
   
-  # O 'set' com o image.repository foi removido. 
-  # O chart usará a imagem padrão 'contrib', que possui os plugins do Loki e Prometheus.
+  # A CORREÇÃO: Declarando explicitamente a imagem com os plugins extras (Contrib)
+  set {
+    name  = "image.repository"
+    value = "otel/opentelemetry-collector-contrib"
+  }
 
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
-
   depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
 
   values = [
