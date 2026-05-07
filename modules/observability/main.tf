@@ -1,11 +1,15 @@
-# 1. Namespace isolado para a stack de monitorização
+# ==========================================================
+# 1. NAMESPACE
+# ==========================================================
 resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = "observabilidade"
   }
 }
 
-# 2. Prometheus: Recolha de métricas (Alertmanager desativado no Helm)
+# ==========================================================
+# 2. PROMETHEUS (Sem Alertmanager nativo e sem discos)
+# ==========================================================
 resource "helm_release" "prometheus" {
   name       = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -13,14 +17,11 @@ resource "helm_release" "prometheus" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Desativa persistência do Servidor Principal para rodar em t3.medium
   set {
     name  = "server.persistentVolume.enabled"
     value = "false"
   }
 
-  # DESATIVAÇÃO DO ALERTMANAGER VIA HELM
-  # Evita que o Helm crie um StatefulSet que exige PVC
   set {
     name  = "alertmanager.enabled"
     value = "false"
@@ -30,9 +31,16 @@ resource "helm_release" "prometheus" {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
   }
+
+  set {
+    name  = "server.alertmanagers[0].static_configs[0].targets[0]"
+    value = "alertmanager-manual-svc.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9093"
+  }
 }
 
-# 3. Loki: Agregador de Logs
+# ==========================================================
+# 3. LOKI (Sem discos)
+# ==========================================================
 resource "helm_release" "loki" {
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
@@ -46,7 +54,9 @@ resource "helm_release" "loki" {
   }
 }
 
-# 4. Grafana: Dashboards e Visualização
+# ==========================================================
+# 4. GRAFANA (Sem discos e com Fontes Injetadas)
+# ==========================================================
 resource "helm_release" "grafana" {
   name       = "grafana"
   repository = "https://grafana.github.io/helm-charts"
@@ -82,6 +92,12 @@ resource "helm_release" "grafana" {
               type      = "loki"
               url       = "http://loki.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:3100"
               access    = "proxy"
+            },
+            {
+              name      = "Jaeger"
+              type      = "jaeger"
+              url       = "http://jaeger-query.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:16686"
+              access    = "proxy"
             }
           ]
         }
@@ -91,10 +107,8 @@ resource "helm_release" "grafana" {
 }
 
 # ==========================================================
-# 5. CONFIGURAÇÃO MANUAL DO ALERTMANAGER (SOLUÇÃO DE CONTORNO)
+# 5. ALERTMANAGER MANUAL (Solução de Contorno)
 # ==========================================================
-
-# Cria o ConfigMap que o Helm deixou de criar ao ser desativado
 resource "kubernetes_config_map" "alertmanager_config" {
   metadata {
     name      = "prometheus-alertmanager"
@@ -122,9 +136,7 @@ resource "kubernetes_config_map" "alertmanager_config" {
   }
 }
 
-# Deployment manual usando emptyDir para garantir status 'Running'
 resource "kubernetes_deployment" "alertmanager_manual" {
-  # Garante que o ConfigMap existe antes de tentar montar o volume
   depends_on = [kubernetes_config_map.alertmanager_config]
 
   metadata {
@@ -182,7 +194,6 @@ resource "kubernetes_deployment" "alertmanager_manual" {
           }
         }
 
-        # Armazenamento efêmero para evitar erros de PVC
         volume {
           name = "storage-volume"
           empty_dir {}
@@ -192,7 +203,6 @@ resource "kubernetes_deployment" "alertmanager_manual" {
   }
 }
 
-# Serviço para expor o Alertmanager manual
 resource "kubernetes_service" "alertmanager_manual_svc" {
   metadata {
     name      = "alertmanager-manual-svc"
@@ -212,4 +222,117 @@ resource "kubernetes_service" "alertmanager_manual_svc" {
 
     type = "ClusterIP"
   }
+}
+
+# ==========================================================
+# 6. JAEGER (Backend de Traces - Em Memória)
+# ==========================================================
+resource "helm_release" "jaeger" {
+  name       = "jaeger"
+  repository = "https://jaegertracing.github.io/helm-charts"
+  chart      = "jaeger"
+  namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600
+
+  set {
+    name  = "allInOne.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "storage.type"
+    value = "memory"
+  }
+
+  set {
+    name  = "agent.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "collector.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "query.enabled"
+    value = "false"
+  }
+}
+
+# ==========================================================
+# 7. OPENTELEMETRY COLLECTOR (O Roteador Central)
+# ==========================================================
+resource "helm_release" "otel_collector" {
+  name       = "otel-collector"
+  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  chart      = "opentelemetry-collector"
+  namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600
+
+  # Garante que os destinos existam antes do roteador subir
+  depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
+
+  values = [
+    yamlencode({
+      mode = "deployment"
+      
+      config = {
+        receivers = {
+          otlp = {
+            protocols = {
+              grpc = { endpoint = "0.0.0.0:4317" }
+              http = { endpoint = "0.0.0.0:4318" }
+            }
+          }
+        }
+
+        processors = {
+          batch = {
+            send_batch_size = 1000
+            timeout         = "10s"
+          }
+          memory_limiter = {
+            check_interval  = "5s"
+            limit_mib       = 250
+            spike_limit_mib = 50
+          }
+        }
+
+        exporters = {
+          prometheusremotewrite = {
+            endpoint = "http://prometheus-server.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:80/api/v1/write"
+            tls = { insecure = true }
+          }
+          loki = {
+            endpoint = "http://loki.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:3100/loki/api/v1/push"
+          }
+          "otlp/jaeger" = {
+            endpoint = "jaeger-collector.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:4317"
+            tls = { insecure = true }
+          }
+        }
+
+        service = {
+          pipelines = {
+            metrics = {
+              receivers  = ["otlp"]
+              processors = ["memory_limiter", "batch"]
+              exporters  = ["prometheusremotewrite"]
+            }
+            logs = {
+              receivers  = ["otlp"]
+              processors = ["memory_limiter", "batch"]
+              exporters  = ["loki"]
+            }
+            traces = {
+              receivers  = ["otlp"]
+              processors = ["memory_limiter", "batch"]
+              exporters  = ["otlp/jaeger"]
+            }
+          }
+        }
+      }
+    })
+  ]
 }
