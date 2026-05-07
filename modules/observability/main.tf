@@ -243,21 +243,9 @@ resource "helm_release" "jaeger" {
     name  = "storage.type"
     value = "memory"
   }
-
-  set {
-    name  = "agent.enabled"
-    value = "false"
-  }
-
-  set {
-    name  = "collector.enabled"
-    value = "false"
-  }
-
-  set {
-    name  = "query.enabled"
-    value = "false"
-  }
+  
+  # As opções de desativar o collector, agent e query foram removidas 
+  # para que os serviços de rede internos sejam criados corretamente.
 }
 
 # ==========================================================
@@ -267,14 +255,13 @@ resource "helm_release" "otel_collector" {
   name       = "otel-collector"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
-  set {
-    name  = "image.repository"
-    value = "otel/opentelemetry-collector-k8s"
-  }
+  
+  # O 'set' com o image.repository foi removido. 
+  # O chart usará a imagem padrão 'contrib', que possui os plugins do Loki e Prometheus.
+
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
-  # Garante que os destinos existam antes do roteador subir
   depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
 
   values = [
