@@ -253,16 +253,20 @@ resource "helm_release" "otel_collector" {
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
   
-  # A CORREÇÃO DA IMAGEM: Declarando explicitamente a imagem com os plugins extras (Contrib)
   set {
     name  = "image.repository"
     value = "otel/opentelemetry-collector-contrib"
   }
 
-  # ---> Fixando uma versão que possui o plugin do Loki <---
   set {
     name  = "image.tag"
     value = "0.104.0"
+  }
+
+  # Desativa a telemetria interna automática do Helm para evitar chaves inválidas
+  set {
+    name  = "telemetry.enabled"
+    value = "false"
   }
 
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
@@ -274,7 +278,6 @@ resource "helm_release" "otel_collector" {
       mode = "deployment"
       
       config = {
-        # A CORREÇÃO DO HEALTH CHECK: Habilitando a porta 13133
         extensions = {
           health_check = {
             endpoint = "0.0.0.0:13133"
@@ -317,14 +320,14 @@ resource "helm_release" "otel_collector" {
         }
 
         service = {
-          # ---> A CORREÇÃO FINAL: Mudando a porta de telemetria interna para 8889 <---
+          # Configuração simplificada de telemetria interna
           telemetry = {
             metrics = {
+              level   = "none" # Desativa métricas internas para evitar conflitos de porta/chave
               address = "0.0.0.0:8889"
             }
           }
 
-          # REGISTRANDO O HEALTH CHECK no serviço principal
           extensions = ["health_check"]
           
           pipelines = {
