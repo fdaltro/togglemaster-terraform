@@ -267,6 +267,10 @@ resource "helm_release" "otel_collector" {
   name       = "otel-collector"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
+  set {
+    name  = "image.repository"
+    value = "otel/opentelemetry-collector-k8s"
+  }
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
 
