@@ -263,12 +263,6 @@ resource "helm_release" "otel_collector" {
     value = "0.104.0"
   }
 
-  # Desativa a telemetria interna automática do Helm para evitar chaves inválidas
-  set {
-    name  = "telemetry.enabled"
-    value = "false"
-  }
-
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
   depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
@@ -276,6 +270,8 @@ resource "helm_release" "otel_collector" {
   values = [
     yamlencode({
       mode = "deployment"
+      
+      # Removemos o bloco 'telemetry' externo que causou o erro de schema
       
       config = {
         extensions = {
@@ -320,11 +316,10 @@ resource "helm_release" "otel_collector" {
         }
 
         service = {
-          # Configuração simplificada de telemetria interna
+          # Desativamos a telemetria interna aqui dentro para evitar conflitos de porta
           telemetry = {
             metrics = {
-              level   = "none" # Desativa métricas internas para evitar conflitos de porta/chave
-              address = "0.0.0.0:8889"
+              level = "none"
             }
           }
 
