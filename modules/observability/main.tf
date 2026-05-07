@@ -317,6 +317,13 @@ resource "helm_release" "otel_collector" {
         }
 
         service = {
+          # ---> A CORREÇÃO FINAL: Mudando a porta de telemetria interna para 8889 <---
+          telemetry = {
+            metrics = {
+              address = "0.0.0.0:8889"
+            }
+          }
+
           # REGISTRANDO O HEALTH CHECK no serviço principal
           extensions = ["health_check"]
           
