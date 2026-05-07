@@ -243,9 +243,6 @@ resource "helm_release" "jaeger" {
     name  = "storage.type"
     value = "memory"
   }
-  
-  # As opções de desativar o collector, agent e query foram removidas 
-  # para que os serviços de rede internos sejam criados corretamente.
 }
 
 # ==========================================================
@@ -256,7 +253,7 @@ resource "helm_release" "otel_collector" {
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
   
-  # A CORREÇÃO: Declarando explicitamente a imagem com os plugins extras (Contrib)
+  # A CORREÇÃO DA IMAGEM: Declarando explicitamente a imagem com os plugins extras (Contrib)
   set {
     name  = "image.repository"
     value = "otel/opentelemetry-collector-contrib"
@@ -271,6 +268,13 @@ resource "helm_release" "otel_collector" {
       mode = "deployment"
       
       config = {
+        # A CORREÇÃO DO HEALTH CHECK: Habilitando a porta 13133
+        extensions = {
+          health_check = {
+            endpoint = "0.0.0.0:13133"
+          }
+        }
+
         receivers = {
           otlp = {
             protocols = {
@@ -307,6 +311,9 @@ resource "helm_release" "otel_collector" {
         }
 
         service = {
+          # REGISTRANDO O HEALTH CHECK no serviço principal
+          extensions = ["health_check"]
+          
           pipelines = {
             metrics = {
               receivers  = ["otlp"]
