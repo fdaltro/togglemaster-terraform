@@ -8,7 +8,7 @@ resource "kubernetes_namespace" "monitoring" {
 }
 
 # ==========================================================
-# 2. PROMETHEUS
+# 2. PROMETHEUS (Sem Alertmanager nativo e sem discos)
 # ==========================================================
 resource "helm_release" "prometheus" {
   name       = "prometheus"
@@ -38,18 +38,13 @@ resource "helm_release" "prometheus" {
   }
 
   set {
-    name  = "server.extraFlags[0]"
-    value = "--enable-feature=remote-write-receiver"
-  }
-
-  set {
     name  = "server.alertmanagers[0].static_configs[0].targets[0]"
     value = "alertmanager-manual-svc.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9093"
   }
 }
 
 # ==========================================================
-# 3. LOKI
+# 3. LOKI (Sem discos)
 # ==========================================================
 resource "helm_release" "loki" {
   name       = "loki"
@@ -65,7 +60,7 @@ resource "helm_release" "loki" {
 }
 
 # ==========================================================
-# 4. GRAFANA
+# 4. GRAFANA (Sem discos e com Fontes Injetadas)
 # ==========================================================
 resource "helm_release" "grafana" {
   name       = "grafana"
@@ -73,11 +68,6 @@ resource "helm_release" "grafana" {
   chart      = "grafana"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
-
-  set {
-    name  = "service.type"
-    value = "LoadBalancer"
-  }
 
   set {
     name  = "persistence.enabled"
@@ -122,7 +112,7 @@ resource "helm_release" "grafana" {
 }
 
 # ==========================================================
-# 5. ALERTMANAGER MANUAL
+# 5. ALERTMANAGER MANUAL (Solução de Contorno)
 # ==========================================================
 resource "kubernetes_config_map" "alertmanager_config" {
   metadata {
@@ -132,7 +122,9 @@ resource "kubernetes_config_map" "alertmanager_config" {
 
   data = {
     "alertmanager.yml" = yamlencode({
-      global = { resolve_timeout = "5m" }
+      global = {
+        resolve_timeout = "5m"
+      }
       route = {
         group_by        = ["alertname"]
         group_wait      = "10s"
@@ -140,7 +132,11 @@ resource "kubernetes_config_map" "alertmanager_config" {
         repeat_interval = "1h"
         receiver        = "default-receiver"
       }
-      receivers = [{ name = "default-receiver" }]
+      receivers = [
+        {
+          name = "default-receiver"
+        }
+      ]
     })
   }
 }
@@ -151,44 +147,61 @@ resource "kubernetes_deployment" "alertmanager_manual" {
   metadata {
     name      = "alertmanager-manual"
     namespace = kubernetes_namespace.monitoring.metadata[0].name
-    labels    = { app = "alertmanager-manual" }
+    labels = {
+      app = "alertmanager-manual"
+    }
   }
 
   spec {
     replicas = 1
-    selector { match_labels = { app = "alertmanager-manual" } }
+    selector {
+      match_labels = {
+        app = "alertmanager-manual"
+      }
+    }
+
     template {
-      metadata { labels = { app = "alertmanager-manual" } }
+      metadata {
+        labels = {
+          app = "alertmanager-manual"
+        }
+      }
+
       spec {
         container {
           name  = "alertmanager"
           image = "quay.io/prometheus/alertmanager:v0.32.1"
-          args  = ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
-          
-          port { 
+          args  = [
+            "--config.file=/etc/alertmanager/alertmanager.yml",
+            "--storage.path=/alertmanager"
+          ]
+
+          port {
             container_port = 9093
-            name           = "http" 
+            name           = "http"
           }
 
-          volume_mount { 
+          volume_mount {
             name       = "config-volume"
-            mount_path = "/etc/alertmanager" 
+            mount_path = "/etc/alertmanager"
           }
 
-          volume_mount { 
+          volume_mount {
             name       = "storage-volume"
-            mount_path = "/alertmanager" 
+            mount_path = "/alertmanager"
           }
         }
-        volume { 
+
+        volume {
           name = "config-volume"
-          config_map { 
-            name = "prometheus-alertmanager" 
-          } 
+          config_map {
+            name = "prometheus-alertmanager"
+          }
         }
-        volume { 
+
+        volume {
           name = "storage-volume"
-          empty_dir {} 
+          empty_dir {}
         }
       }
     }
@@ -200,19 +213,24 @@ resource "kubernetes_service" "alertmanager_manual_svc" {
     name      = "alertmanager-manual-svc"
     namespace = kubernetes_namespace.monitoring.metadata[0].name
   }
+
   spec {
-    selector = { app = "alertmanager-manual" }
-    port { 
+    selector = {
+      app = "alertmanager-manual"
+    }
+
+    port {
       port        = 9093
       target_port = 9093
-      name        = "http" 
+      name        = "http"
     }
+
     type = "ClusterIP"
   }
 }
 
 # ==========================================================
-# 6. JAEGER
+# 6. JAEGER (Backend de Traces - Em Memória)
 # ==========================================================
 resource "helm_release" "jaeger" {
   name       = "jaeger"
@@ -233,24 +251,21 @@ resource "helm_release" "jaeger" {
 }
 
 # ==========================================================
-# 7. OPENTELEMETRY COLLECTOR
+# 7. OPENTELEMETRY COLLECTOR (O Roteador Central)
 # ==========================================================
 resource "helm_release" "otel_collector" {
   name       = "otel-collector"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
-  namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  timeout    = 600
-  depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
-
-  set {
-    name  = "fullnameOverride"
-    value = "otel-collector"
-  }
-
+  
   set {
     name  = "image.repository"
     value = "otel/opentelemetry-collector-contrib"
+  }
+  
+  set {
+    name  = "fullnameOverride"
+    value = "otel-collector"
   }
 
   set {
@@ -258,10 +273,23 @@ resource "helm_release" "otel_collector" {
     value = "0.104.0"
   }
 
+  namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600
+  depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
+
   values = [
     yamlencode({
       mode = "deployment"
+      
+      # Removemos o bloco 'telemetry' externo que causou o erro de schema
+      
       config = {
+        extensions = {
+          health_check = {
+            endpoint = "0.0.0.0:13133"
+          }
+        }
+
         receivers = {
           otlp = {
             protocols = {
@@ -270,10 +298,19 @@ resource "helm_release" "otel_collector" {
             }
           }
         }
+
         processors = {
-          batch = { send_batch_size = 1000, timeout = "10s" }
-          memory_limiter = { check_interval = "5s", limit_mib = 250, spike_limit_mib = 50 }
+          batch = {
+            send_batch_size = 1000
+            timeout         = "10s"
+          }
+          memory_limiter = {
+            check_interval  = "5s"
+            limit_mib       = 250
+            spike_limit_mib = 50
+          }
         }
+
         exporters = {
           prometheusremotewrite = {
             endpoint = "http://prometheus-server.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:80/api/v1/write"
@@ -287,7 +324,17 @@ resource "helm_release" "otel_collector" {
             tls = { insecure = true }
           }
         }
+
         service = {
+          # Desativamos a telemetria interna aqui dentro para evitar conflitos de porta
+          telemetry = {
+            metrics = {
+              level = "none"
+            }
+          }
+
+          extensions = ["health_check"]
+          
           pipelines = {
             metrics = {
               receivers  = ["otlp"]
