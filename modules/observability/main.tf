@@ -101,7 +101,7 @@ resource "helm_release" "grafana" {
             {
               name      = "Jaeger"
               type      = "jaeger"
-              url       = "http://jaeger-query.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:16686"
+              url       = "http://jaeger.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:16686"
               access    = "proxy"
             }
           ]
