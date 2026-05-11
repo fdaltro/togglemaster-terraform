@@ -164,15 +164,32 @@ resource "kubernetes_deployment" "alertmanager_manual" {
           name  = "alertmanager"
           image = "quay.io/prometheus/alertmanager:v0.32.1"
           args  = ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+          
           port { 
             container_port = 9093
-            name = "http" 
+            name           = "http" 
           }
-          volume_mount { name = "config-volume"; mount_path = "/etc/alertmanager" }
-          volume_mount { name = "storage-volume"; mount_path = "/alertmanager" }
+
+          volume_mount { 
+            name       = "config-volume"
+            mount_path = "/etc/alertmanager" 
+          }
+
+          volume_mount { 
+            name       = "storage-volume"
+            mount_path = "/alertmanager" 
+          }
         }
-        volume { name = "config-volume"; config_map { name = "prometheus-alertmanager" } }
-        volume { name = "storage-volume"; empty_dir {} }
+        volume { 
+          name = "config-volume"
+          config_map { 
+            name = "prometheus-alertmanager" 
+          } 
+        }
+        volume { 
+          name = "storage-volume"
+          empty_dir {} 
+        }
       }
     }
   }
@@ -185,7 +202,11 @@ resource "kubernetes_service" "alertmanager_manual_svc" {
   }
   spec {
     selector = { app = "alertmanager-manual" }
-    port { port = 9093; target_port = 9093; name = "http" }
+    port { 
+      port        = 9093
+      target_port = 9093
+      name        = "http" 
+    }
     type = "ClusterIP"
   }
 }
@@ -250,8 +271,8 @@ resource "helm_release" "otel_collector" {
           }
         }
         processors = {
-          batch = { send_batch_size = 1000; timeout = "10s" }
-          memory_limiter = { check_interval = "5s"; limit_mib = 250; spike_limit_mib = 50 }
+          batch = { send_batch_size = 1000, timeout = "10s" }
+          memory_limiter = { check_interval = "5s", limit_mib = 250, spike_limit_mib = 50 }
         }
         exporters = {
           prometheusremotewrite = {
