@@ -28,6 +28,11 @@ resource "helm_release" "prometheus" {
   }
 
   set {
+    name  = "service.type"
+    value = "LoadBalancer"
+  }
+
+  set {
     name  = "pushgateway.persistentVolume.enabled"
     value = "false"
   }
