@@ -320,7 +320,7 @@ resource "helm_release" "otel_collector" {
             endpoint = "http://loki.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:3100/loki/api/v1/push"
           }
           "otlp/jaeger" = {
-            endpoint = "jaeger-collector.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:4317"
+            endpoint = "jaeger.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:4317"
             tls = { insecure = true }
           }
         }
