@@ -19,12 +19,12 @@ resource "helm_release" "prometheus" {
 
   set {
     name  = "server.extraFlags[0]"
-    value = "--web.enable-remote-write-receiver"
+    value = "web.enable-remote-write-receiver"
   }
 
   set {
     name  = "server.extraFlags[1]"
-    value = "--enable-feature=remote-write-receiver"
+    value = "enable-feature=remote-write-receiver"
   }
 
   set {
