@@ -309,6 +309,9 @@ resource "helm_release" "otel_collector" {
             limit_mib       = 250
             spike_limit_mib = 50
           }
+          resourcedetection = {
+            detectors = ["env", "system"]
+          }
         }
 
         exporters = {
@@ -322,6 +325,12 @@ resource "helm_release" "otel_collector" {
           "otlp/jaeger" = {
             endpoint = "jaeger.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:4317"
             tls = { insecure = true }
+          }
+          datadog = {
+            api = {
+              key  = "652f13a64d96b3cdb72aa07516d7f9a5"
+              site = "datadoghq.com"
+            }
           }
         }
 
@@ -338,18 +347,18 @@ resource "helm_release" "otel_collector" {
           pipelines = {
             metrics = {
               receivers  = ["otlp"]
-              processors = ["memory_limiter", "batch"]
-              exporters  = ["prometheusremotewrite"]
+              processors = ["resourcedetection","memory_limiter", "batch"]
+              exporters  = ["prometheusremotewrite","datadog"]
             }
             logs = {
               receivers  = ["otlp"]
-              processors = ["memory_limiter", "batch"]
-              exporters  = ["loki"]
+              processors = ["resourcedetection","memory_limiter", "batch"]
+              exporters  = ["loki","datadog"]
             }
             traces = {
               receivers  = ["otlp"]
-              processors = ["memory_limiter", "batch"]
-              exporters  = ["otlp/jaeger"]
+              processors = ["resourcedetection","memory_limiter", "batch"]
+              exporters  = ["otlp/jaeger","datadog"]
             }
           }
         }
