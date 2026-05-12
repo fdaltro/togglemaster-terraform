@@ -18,6 +18,16 @@ resource "helm_release" "prometheus" {
   timeout    = 600
 
   set {
+    name  = "server.extraFlags[0]"
+    value = "--web.enable-remote-write-receiver"
+  }
+
+  set {
+    name  = "server.extraFlags[1]"
+    value = "--enable-feature=remote-write-receiver"
+  }
+
+  set {
     name  = "server.persistentVolume.enabled"
     value = "false"
   }
