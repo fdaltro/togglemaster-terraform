@@ -27,6 +27,12 @@ resource "helm_release" "prometheus" {
     value = "enable-feature=remote-write-receiver"
   }
 
+  # Permite que o container configmap-reload envie o comando de restart para o Prometheus
+  set {
+    name  = "server.extraFlags[2]"
+    value = "web.enable-lifecycle"
+  }
+
   set {
     name  = "server.persistentVolume.enabled"
     value = "false"
