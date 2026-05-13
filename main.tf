@@ -77,6 +77,7 @@ module "k8s_config" {
 # ===========================================================
 module "observability" {
   source = "./modules/observability"
+  redis_endpoint = module.database.redis_endpoint
 
   # Dependência explícita para evitar que o Helm tente instalar antes do cluster existir
   depends_on = [module.eks, module.k8s_config] 
