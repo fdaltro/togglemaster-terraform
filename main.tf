@@ -82,3 +82,23 @@ module "observability" {
   # Dependência explícita para evitar que o Helm tente instalar antes do cluster existir
   depends_on = [module.eks, module.k8s_config] 
 }
+
+# ==========================================================
+# 9. Datadog AWS
+# ==========================================================
+# 1. Configuração do Provider
+provider "datadog" {
+  api_key = var.datadog_api_key
+  app_key = var.datadog_app_key
+  api_url = "https://api.datadoghq.com/"
+}
+
+# 2. Chamada do Módulo
+module "datadog_aws" {
+  source         = "./modules/datadog-aws"
+  aws_account_id = "504491092699" # Seu ID da Academy
+  # Passamos as chaves para dentro do módulo se ele precisar delas
+  datadog_api_key = var.datadog_api_key
+  datadog_app_key = var.datadog_app_key
+}
+
