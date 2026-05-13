@@ -413,22 +413,10 @@ resource "helm_release" "datadog_agent" {
   }
 
   set {
-    name  = "datadog.confd.redisdb\\.yaml"
-    value = yamlencode({
-      instances = [
-        {
-          # O host deve ser o endpoint do ElastiCache (que você pode obter do output do outro módulo)
-          host = var.redis_endpoint
-          port = 6379
-          # Se não houver token, garantimos que o Agent saiba que a autenticação é vazia
-          username = ""
-          password = ""
-          # Desabilita comandos de admin que o ElastiCache bloqueia e causam erro de 'Auth'
-          collect_client_list = false
-        }
-      ]
-    })
+    name  = "datadog.confd.redisdb\\.enabled"
+    value = "false"
   }
+
   set {
     name  = "datadog.site"
     value = "datadoghq.com"
