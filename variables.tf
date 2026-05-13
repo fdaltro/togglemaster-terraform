@@ -28,3 +28,6 @@ variable "aws_session_token" {
   description = "AWS Session Token vindo do GitHub Secrets"
   type        = string
 }
+
+variable "datadog_api_key" { type = string; sensitive = true }
+variable "datadog_app_key" { type = string; sensitive = true }
