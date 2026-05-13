@@ -86,19 +86,20 @@ module "observability" {
 # ==========================================================
 # 9. Datadog AWS
 # ==========================================================
-# 1. Configuração do Provider
+
+# 1. Configuração do Provider (Escopo Global)
+# O Terraform usará estas chaves para todos os recursos Datadog, 
+# inclusive os que estão dentro de módulos.
 provider "datadog" {
   api_key = var.datadog_api_key
   app_key = var.datadog_app_key
   api_url = "https://api.datadoghq.com/"
 }
 
-# 2. Chamada do Módulo
+# 2. Chamada do Módulo Corrigida
 module "datadog_aws" {
   source         = "./modules/datadog-aws"
-  aws_account_id = "504491092699" # Seu ID da Academy
-  # Passamos as chaves para dentro do módulo se ele precisar delas
-  datadog_api_key = var.datadog_api_key
-  datadog_app_key = var.datadog_app_key
+  aws_account_id = "504491092699" 
+
 }
 
