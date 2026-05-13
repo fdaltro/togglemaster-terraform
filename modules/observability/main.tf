@@ -418,7 +418,7 @@ resource "helm_release" "datadog_agent" {
       instances = [
         {
           # O host deve ser o endpoint do ElastiCache (que você pode obter do output do outro módulo)
-          host = aws_elasticache_cluster.redis.cache_nodes[0].address
+          host = var.redis_endpoint
           port = 6379
           # Se não houver token, garantimos que o Agent saiba que a autenticação é vazia
           username = ""
