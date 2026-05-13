@@ -83,11 +83,4 @@ module "observability" {
   depends_on = [module.eks, module.k8s_config] 
 }
 
-# ==========================================================
-# 9. Datadog AWS
-# ==========================================================
-module "datadog_aws" {
-  source         = "./modules/datadog-aws"
-  aws_account_id = "504491092699" 
-}
 
