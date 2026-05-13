@@ -19,6 +19,9 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = ">= 1.14.0"
     }
+    datadog = {
+      source = "DataDog/datadog"
+    }
   }
 
   backend "s3" {
