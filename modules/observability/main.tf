@@ -396,3 +396,53 @@ resource "helm_release" "metrics_server" {
     value = "--kubelet-insecure-tls"
   }
 }
+
+# ==========================================================
+# 9. DATADOG AGENT (Âncora de Infraestrutura)
+# ==========================================================
+resource "helm_release" "datadog_agent" {
+  name       = "datadog"
+  repository = "https://helm.datadoghq.com"
+  chart      = "datadog"
+  namespace  = kubernetes_namespace.monitoring.metadata[0].name # Usa o namespace 'observabilidade' 
+  timeout    = 600
+
+  set_sensitive {
+    name  = "datadog.apiKey"
+    value = "652f13a64d96b3cdb72aa07516d7f9a5" # Chave idêntica à usada no OTel
+  }
+
+  set {
+    name  = "datadog.site"
+    value = "datadoghq.com"
+  }
+
+  # Habilita a coleta de logs e métricas do K8s para estabilizar o Service Map
+  set {
+    name  = "datadog.logs.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "datadog.logs.containerCollectAll"
+    value = "true"
+  }
+
+  # Essencial para correlacionar os Traces do OTel com a Infraestrutura
+  set {
+    name  = "datadog.apm.portEnabled"
+    value = "true"
+  }
+
+  # Ativa o Cluster Agent para monitorar o estado geral do cluster
+  set {
+    name  = "clusterAgent.enabled"
+    value = "true"
+  }
+
+  # Configuração para evitar conflitos de porta com o Metrics Server 
+  set {
+    name  = "datadog.kubelet.tlsVerify"
+    value = "false"
+  }
+}
