@@ -49,6 +49,13 @@ provider "helm" {
   }
 }
 
+# Provider Datadog centralizado
+provider "datadog" {
+  api_key = var.datadog_api_key
+  app_key = var.datadog_app_key
+  api_url = "https://api.datadoghq.com/"
+}
+
 # ADICIONADO: Configuração do provider kubectl
 provider "kubectl" {
   host                   = module.eks.cluster_endpoint
