@@ -423,6 +423,8 @@ resource "helm_release" "datadog_agent" {
           # Se não houver token, garantimos que o Agent saiba que a autenticação é vazia
           username = ""
           password = ""
+          # Desabilita comandos de admin que o ElastiCache bloqueia e causam erro de 'Auth'
+          collect_client_list = false
         }
       ]
     })
