@@ -32,7 +32,7 @@ provider "aws" {
   region = var.region
 }
 
-# --- Autenticação Dinâmica ---
+# --- Autenticação Dinâmica ----
 
 
 provider "kubernetes" {
