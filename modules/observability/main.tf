@@ -267,18 +267,21 @@ resource "helm_release" "jaeger" {
 }
 
 # ==========================================================
-# 7. OPENTELEMETRY COLLECTOR (O Roteador Central)
+# 7. OPENTELEMETRY COLLECTOR (Roteador Central Duplo: Jaeger + Datadog)
 # ==========================================================
 resource "helm_release" "otel_collector" {
   name       = "otel-collector"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
-  
+  namespace  = kubernetes_namespace.monitoring.metadata[0].name
+  timeout    = 600
+  depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
+
   set {
     name  = "image.repository"
     value = "otel/opentelemetry-collector-contrib"
   }
-  
+
   set {
     name  = "fullnameOverride"
     value = "otel-collector"
@@ -289,15 +292,9 @@ resource "helm_release" "otel_collector" {
     value = "0.104.0"
   }
 
-  namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  timeout    = 600
-  depends_on = [helm_release.prometheus, helm_release.loki, helm_release.jaeger]
-
   values = [
     yamlencode({
       mode = "deployment"
-      
-      # Removemos o bloco 'telemetry' externo que causou o erro de schema
       
       config = {
         extensions = {
@@ -338,9 +335,11 @@ resource "helm_release" "otel_collector" {
           loki = {
             endpoint = "http://loki.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:3100/loki/api/v1/push"
           }
-          "otlp/jaeger" = {
+          otlp/jaeger = {
             endpoint = "jaeger.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:4317"
-            tls = { insecure = true }
+            tls = {
+              insecure = true
+            }
           }
           datadog = {
             api = {
@@ -351,7 +350,6 @@ resource "helm_release" "otel_collector" {
         }
 
         service = {
-          # Desativamos a telemetria interna aqui dentro para evitar conflitos de porta
           telemetry = {
             metrics = {
               level = "none"
@@ -363,18 +361,18 @@ resource "helm_release" "otel_collector" {
           pipelines = {
             metrics = {
               receivers  = ["otlp"]
-              processors = ["resourcedetection","memory_limiter", "batch"]
-              exporters  = ["prometheusremotewrite","datadog"]
+              processors = ["resourcedetection", "memory_limiter", "batch"]
+              exporters  = ["prometheusremotewrite", "datadog"]
             }
             logs = {
               receivers  = ["otlp"]
-              processors = ["resourcedetection","memory_limiter", "batch"]
-              exporters  = ["loki","datadog"]
+              processors = ["resourcedetection", "memory_limiter", "batch"]
+              exporters  = ["loki", "datadog"]
             }
             traces = {
               receivers  = ["otlp"]
-              processors = ["resourcedetection","memory_limiter", "batch"]
-              exporters  = ["otlp/jaeger","datadog"]
+              processors = ["resourcedetection", "memory_limiter", "batch"]
+              exporters  = ["otlp/jaeger", "datadog"]
             }
           }
         }
@@ -382,6 +380,7 @@ resource "helm_release" "otel_collector" {
     })
   ]
 }
+
 # ==========================================================
 # 8. METRICS SERVER (Habilita o 'kubectl top')
 # ==========================================================
