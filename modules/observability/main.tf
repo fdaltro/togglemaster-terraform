@@ -413,21 +413,18 @@ resource "helm_release" "datadog_agent" {
   }
 
   set {
-  name = "datadog.confd.redisdb\\.yaml"
-
-  value = yamlencode({
-    init_config = {}
-
-    instances = [
-      {
-        host = var.redis_endpoint
-        port = 6379
-
-        empty_default_hostname = true
-      }
-    ]
-  })
-}
+    name = "datadog.confd.redisdb\\.yaml"
+    value = yamlencode({
+      init_config = {}
+      instances = [
+        {
+          host = var.redis_endpoint
+          port = 6379
+          empty_default_hostname = true
+        }
+      ]
+    })
+  }
 
   set {
     name  = "datadog.site"
@@ -462,4 +459,39 @@ resource "helm_release" "datadog_agent" {
     name  = "datadog.kubelet.tlsVerify"
     value = "false"
   }
+}
+
+# ==========================================================
+# 10. ALERTA INTELIGENTE 
+# ==========================================================
+resource "datadog_monitor" "auth_service_5xx_alert" {
+  name    = "[ToggleMaster] Taxa de Erro HTTP 5xx Crítica - auth-service"
+  type    = "apm metric alert"
+  
+  # Mensagem de envio que aciona as suas integrações de ChatOps e PagerDuty
+  message = "A taxa de erro HTTP 5xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
+
+  # Métrica de APM: Se a divisão de erros por requisições nos últimos 5 minutos for > 5%
+  query = "avg(last_5m):sum:trace.http.server.errors{service:auth-service}.as_rate() / sum:trace.http.server.hits{service:auth-service}.as_rate() > 0.05"
+
+  monitor_thresholds {
+    critical = 0.05
+    warning  = 0.02
+  }
+
+  notify_no_data   = false
+  evaluation_delay = 60
+
+  tags = ["env:production", "service:auth-service", "team:grupo12-fiap"]
+}
+
+# ==========================================================
+# 11. PROVIDER DO DATADOG (Requisito para criar Alertas via Código)
+# ==========================================================
+# Certifique-se de que este provider está declarado no seu projeto.
+# Ele precisa da API Key e da APP Key (que você gera no console do Datadog).
+provider "datadog" {
+  api_key = "652f13a64d96b3cdb72aa07516d7f9a5"
+  app_key = "ddapp_q7r7xtm4M6MYYBmEB9PHecRIwRzq0ng7wb"
+  site    = "datadoghq.com"
 }
