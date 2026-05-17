@@ -493,3 +493,32 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
 
   tags = ["env:production", "service:auth-service", "team:grupo04-fiap"]
 }
+
+# ==========================================================
+# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER
+# ==========================================================
+resource "datadog_dashboard" "togglemaster_dashboard" {
+  title       = "ToggleMaster - Dashboard de Operações (Grupo 04)"
+  description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
+  layout_type = "ordered"
+
+  # Widget 1: Gráfico de linha temporal associado ao alerta de 5xx que você já tem
+  widget {
+    alert_graph_definition {
+      alert_id  = datadog_monitor.auth_service_5xx_alert.id
+      viz_type  = "timeseries"
+      title     = "Status do Alerta: Taxa de Erro HTTP 5xx (auth-service)"
+    }
+  }
+
+  # Widget 2: Gráfico de volume de requisições por segundo (Hits) no APM
+  widget {
+    timeseries_definition {
+      title = "Volume de Requisições - auth-service"
+      request {
+        q            = "sum:trace.http.server.hits{service:auth-service}.as_rate()"
+        display_type = "line"
+      }
+    }
+  }
+}
