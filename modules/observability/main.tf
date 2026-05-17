@@ -413,20 +413,21 @@ resource "helm_release" "datadog_agent" {
   }
 
   set {
-    name  = "datadog.confd.redisdb\\.yaml"
-    value = yamlencode({
-      instances = [
-        {
-          host     = var.redis_endpoint
-          port     = 6379
-          # Explicitamente definimos como null/vazio para forçar a conexão sem AUTH
-          password = null 
-          # Desabilita o check se ele falhar na autenticação para limpar o log
-          empty_default_hostname = true
-        }
-      ]
-    })
-  }
+  name = "datadog.confd.redisdb\\.yaml"
+
+  value = yamlencode({
+    init_config = {}
+
+    instances = [
+      {
+        host = var.redis_endpoint
+        port = 6379
+
+        empty_default_hostname = true
+      }
+    ]
+  })
+}
 
   set {
     name  = "datadog.site"
