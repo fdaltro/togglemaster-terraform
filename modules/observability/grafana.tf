@@ -1,4 +1,16 @@
 # ==========================================================
+# DECLARAÇÃO DE PROVEDOR REQUERIDO PELO MÓDULO
+# ==========================================================
+terraform {
+  required_providers {
+    grafana = {
+      source  = "grafana/grafana"
+      version = ">= 2.10.0"
+    }
+  }
+}
+
+# ==========================================================
 # 1. PASTA DE MONITORAMENTO NO GRAFANA
 # ==========================================================
 resource "grafana_folder" "togglemaster" {
