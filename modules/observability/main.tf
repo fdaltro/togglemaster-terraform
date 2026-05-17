@@ -475,7 +475,7 @@ resource "helm_release" "datadog_agent" {
 # ==========================================================
 resource "datadog_monitor" "auth_service_5xx_alert" {
   name    = "[ToggleMaster] Taxa de Erro HTTP 5xx Crítica - auth-service"
-  type    = "apm metric alert"
+  type    = "query alert"
   
   # Mensagem de envio que aciona as suas integrações de ChatOps e PagerDuty
   message = "A taxa de erro HTTP 5xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
@@ -491,5 +491,5 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   notify_no_data   = false
   evaluation_delay = 60
 
-  tags = ["env:production", "service:auth-service", "team:grupo12-fiap"]
+  tags = ["env:production", "service:auth-service", "team:grupo04-fiap"]
 }
