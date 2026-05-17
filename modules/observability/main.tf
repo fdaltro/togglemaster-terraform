@@ -484,14 +484,3 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
 
   tags = ["env:production", "service:auth-service", "team:grupo12-fiap"]
 }
-
-# ==========================================================
-# 11. PROVIDER DO DATADOG (Requisito para criar Alertas via Código)
-# ==========================================================
-# Certifique-se de que este provider está declarado no seu projeto.
-# Ele precisa da API Key e da APP Key (que você gera no console do Datadog).
-provider "datadog" {
-  api_key = "652f13a64d96b3cdb72aa07516d7f9a5"
-  app_key = "ddapp_q7r7xtm4M6MYYBmEB9PHecRIwRzq0ng7wb"
-  site    = "datadoghq.com"
-}

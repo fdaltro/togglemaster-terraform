@@ -57,3 +57,11 @@ provider "kubectl" {
   token                  = data.aws_eks_cluster_auth.cluster.token
   load_config_file       = false # VITAL: Impede que o Terraform tente ler o kubeconfig local no plan
 }
+
+
+# PROVIDER DO DATADOG (Requisito para criar Alertas via Código)
+provider "datadog" {
+  api_key = "652f13a64d96b3cdb72aa07516d7f9a5"
+  app_key = "ddapp_q7r7xtm4M6MYYBmEB9PHecRIwRzq0ng7wb"
+  site    = "datadoghq.com"
+}
