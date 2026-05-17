@@ -69,19 +69,18 @@ resource "grafana_dashboard" "togglemaster_dashboard" {
 resource "grafana_rule_group" "auth_service_alerts" {
   name             = "alertas-auth-service"
   folder_uid       = grafana_folder.togglemaster.uid
-  interval_seconds = 30 # Avalia a regra a cada 1 minuto
+  interval_seconds = 60 # Avalia a regra a cada 1 minuto
 
   rule {
     name           = "[ToggleMaster] Taxa de Erro HTTP 5xx Crítica - auth-service"
-    condition      = "C" # Aponta para a expressão matemática final (C)
-    for            = "5m" # Precisa persistir por 5 minutos para disparar
+    condition      = "C"  # Aponta para a expressão matemática final (C)
+    for            = "1m" # Configurado para 1 minuto conforme seu ajuste rápido!
 
     # A: Coleta o valor atual da taxa de erro vindo do OpenTelemetry via Prometheus
     data {
-      ref_id = "A"
+      ref_id         = "A"
       datasource_uid = "prometheus"
       
-      # CORREÇÃO AQUI: Quebrado em múltiplas linhas sem a vírgula
       relative_time_range {
         from = 300
         to   = 0
@@ -96,6 +95,13 @@ resource "grafana_rule_group" "auth_service_alerts" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
+      
+      # 🔥 Correção: Adicionado o time range obrigatório para a expressão B
+      relative_time_range {
+        from = 300
+        to   = 0
+      }
+
       model = jsonencode({
         type       = "reduce"
         expression = "A"
@@ -107,6 +113,13 @@ resource "grafana_rule_group" "auth_service_alerts" {
     data {
       ref_id         = "C"
       datasource_uid = "__expr__"
+      
+      # 🔥 Correção: Adicionado o time range obrigatório para a expressão C
+      relative_time_range {
+        from = 300
+        to   = 0
+      }
+
       model = jsonencode({
         type       = "math"
         expression = "$B > 0.05"
