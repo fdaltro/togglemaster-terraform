@@ -3,11 +3,13 @@ terraform {
     datadog = {
       source  = "datadog/datadog"
       version = "~> 3.0"
-    }/*
+    }
+    /*
     grafana = {
       source  = "grafana/grafana"
       version = ">= 2.10.0"
-    }/*
+    }
+    /*
   }
 }
 
