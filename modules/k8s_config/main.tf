@@ -100,7 +100,8 @@ resource "kubernetes_secret" "evaluation_secret" {
   }
 
   data = {
-    SERVICE_API_KEY = "admin-secreto-123"
+    # 👉 CHAVE CORRIGIDA PARA AUTOMAÇÃO TOTAL
+    SERVICE_API_KEY = "togglemaster-eval-key-123"
   }
 
   type = "Opaque"
