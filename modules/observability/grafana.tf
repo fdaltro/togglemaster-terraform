@@ -78,8 +78,14 @@ resource "grafana_rule_group" "auth_service_alerts" {
     # A: Coleta o valor atual da taxa de erro vindo do OpenTelemetry via Prometheus
     data {
       ref_id = "A"
-      relative_time_range { from = 300, to = 0 }
       datasource_uid = "prometheus"
+      
+      # CORREÇÃO AQUI: Quebrado em múltiplas linhas sem a vírgula
+      relative_time_range {
+        from = 300
+        to   = 0
+      }
+
       model = jsonencode({
         expr = "sum(rate(http_server_request_duration_seconds_count{service_name=\"auth-service\", http_response_status_code=~\"5..\"}[5m])) / sum(rate(http_server_request_duration_seconds_count{service_name=\"auth-service\"}[5m]))"
       })
