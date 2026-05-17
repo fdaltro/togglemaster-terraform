@@ -83,7 +83,8 @@ resource "kubernetes_config_map" "evaluation_config" {
   }
 
   data = {
-    REDIS_URL             = "redis://${var.redis_endpoint}:6379"
+    # REDIS_URL             = "redis://${var.redis_endpoint}:6379"
+    REDIS_ADDR            = "${var.redis_endpoint}:6379"
     AWS_SQS_URL           = var.sqs_queue_url
     AWS_REGION            = var.region
     AUTH_SERVICE_URL      = "http://auth-service:8001"
