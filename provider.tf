@@ -67,5 +67,4 @@ provider "kubectl" {
 provider "datadog" {
   api_key = "652f13a64d96b3cdb72aa07516d7f9a5"
   app_key = "ddapp_q7r7xtm4M6MYYBmEB9PHecRIwRzq0ng7wb"
-  site    = "datadoghq.com"
 }
