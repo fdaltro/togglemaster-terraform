@@ -406,9 +406,9 @@ resource "helm_release" "metrics_server" {
   }
 }
 
-# ==========================================================
+# ===========================================================
 # 9. DATADOG AGENT (Âncora de Infraestrutura)
-# ==========================================================
+# ===========================================================
 resource "helm_release" "datadog_agent" {
   name       = "datadog"
   repository = "https://helm.datadoghq.com"
