@@ -179,16 +179,16 @@ resource "kubernetes_config_map_v1_data" "aws_auth_lambda" {
   force = true
 
   data = {
-    mapRoles = <<EOF
-  - groups:
-      - system:bootstrappers
-      - system:nodes
-    rolearn: arn:aws:iam::504491092699:role/LabNodesRole
-    username: system:node:{{EC2PrivateDNSName}}
-  - groups:
-      - system:masters
-    rolearn: arn:aws:iam::504491092699:role/LabRole
-    username: lambda-self-healing
+    mapRoles = <<-EOF
+- groups:
+    - system:bootstrappers
+    - system:nodes
+  rolearn: arn:aws:iam::504491092699:role/LabNodesRole
+  username: system:node:{{EC2PrivateDNSName}}
+- groups:
+    - system:masters
+  rolearn: arn:aws:iam::504491092699:role/LabRole
+  username: lambda-self-healing
 EOF
   }
 }
