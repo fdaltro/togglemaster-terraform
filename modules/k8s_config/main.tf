@@ -176,20 +176,19 @@ resource "kubernetes_config_map_v1_data" "aws_auth_lambda" {
     namespace = "kube-system"
   }
 
-  # Força a atualização dos dados sem recriar o recurso do zero
   force = true
 
   data = {
     mapRoles = <<EOF
-- groups:
-  - system:bootstrappers
-  - system:nodes
-  rolearn: arn:aws:iam::504491092699:role/LabNodesRole
-  username: system:node:{{EC2PrivateDNSName}}
-- groups:
-  - system:masters
-  rolearn: arn:aws:iam::504491092699:role/LabRole
-  username: lambda-self-healing
+  - groups:
+      - system:bootstrappers
+      - system:nodes
+    rolearn: arn:aws:iam::504491092699:role/LabNodesRole
+    username: system:node:{{EC2PrivateDNSName}}
+  - groups:
+      - system:masters
+    rolearn: arn:aws:iam::504491092699:role/LabRole
+    username: lambda-self-healing
 EOF
   }
 }
