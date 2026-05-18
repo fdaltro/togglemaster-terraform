@@ -165,3 +165,31 @@ resource "kubernetes_secret" "targeting_secret" {
 
   type = "Opaque"
 }
+
+# ==========================================================
+# 8. PERMISSÃO AUTOMÁTICA PARA SELF-HEALING (AWS ACADEMY)
+# Garante que a Lambda (via LabRole) possa executar o restart
+# ==========================================================
+resource "kubernetes_config_map_v1_data" "aws_auth_lambda" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  # Força a atualização dos dados sem recriar o recurso do zero
+  force = true
+
+  data = {
+    mapRoles = <<EOF
+- groups:
+  - system:bootstrappers
+  - system:nodes
+  rolearn: arn:aws:iam::504491092699:role/LabNodesRole
+  username: system:node:{{EC2PrivateDNSName}}
+- groups:
+  - system:masters
+  rolearn: arn:aws:iam::504491092699:role/LabRole
+  username: lambda-self-healing
+EOF
+  }
+}
