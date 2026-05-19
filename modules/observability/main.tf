@@ -528,7 +528,7 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
 # 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER
 # ==========================================================
 resource "datadog_dashboard" "togglemaster_dashboard" {
-  title       = "ToggleMaster - Dashboard de Operações (Grupo 12)"
+  title       = "ToggleMaster - Dashboard de Operações (Grupo 04)"
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
