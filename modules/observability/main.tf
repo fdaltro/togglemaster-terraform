@@ -501,16 +501,16 @@ resource "helm_release" "datadog_agent" {
 }
 
 # ==========================================================
-# 10. ALERTA INTELIGENTE (Métrica validada na UI)
+# 10. ALERTA INTELIGENTE (Gatilho rápido de 1 minuto)
 # ==========================================================
 resource "datadog_monitor" "auth_service_5xx_alert" {
-  name    = "[ToggleMaster] Taxa de Erro HTTP 5xx Crítica - auth-service"
+  name    = "[ToggleMaster] Taxa de Erro HTTP 4xx Crítica - auth-service"
   type    = "query alert"
   
-  message = "A taxa de erro HTTP 5xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
+  message = "A taxa de erro HTTP 4xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
 
-  # Query EXATA extraída da UI do Datadog: usa count:http.server.duration, tag service e tag http.status_code
-  query = "sum(last_5m):count:http.server.duration{service:auth-service,http.status_code:5*}.as_rate() / count:http.server.duration{service:auth-service}.as_rate() > 0.05"
+  # 🔥 ALTERADO: sum(last_1m) forçará o Datadog a avaliar apenas o último minuto, acelerando o disparo
+  query = "sum(last_1m):count:http.server.duration{service:auth-service,http.status_code:4*}.as_rate() / count:http.server.duration{service:auth-service}.as_rate() > 0.05"
 
   monitor_thresholds {
     critical = 0.05
@@ -518,44 +518,67 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   }
 
   notify_no_data   = false
+  
+  # Tempo de espera para garantir que o OpenTelemetry enviou os dados antes de avaliar
   evaluation_delay = 60
 
-  tags = ["env:production", "service:auth-service", "team:grupo12-fiap"]
+  # 🔥 ALTERADO: Atualizado para grupo04
+  tags = ["env:production", "service:auth-service", "team:grupo04-fiap"]
 }
 
 # ==========================================================
-# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER (Métrica validada na UI)
+# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER
 # ==========================================================
 resource "datadog_dashboard" "togglemaster_dashboard" {
-  title       = "ToggleMaster - Dashboard de Operações (Grupo 12)"
+  # 🔥 ALTERADO: Atualizado para Grupo 04
+  title       = "ToggleMaster - Dashboard de Operações (Grupo 04)"
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
+  # Widget 1: Gráfico do Status do Alerta (Vermelho quando dispara)
   widget {
     alert_graph_definition {
       alert_id  = datadog_monitor.auth_service_5xx_alert.id
       viz_type  = "timeseries"
-      title     = "Status do Alerta: Taxa de Erro HTTP 5xx (auth-service)"
+      title     = "Status do Alerta: Taxa de Erro HTTP 4xx (auth-service)"
     }
   }
 
+  # Widget 2: Volume Total de Requisições (Sucesso + Erro)
   widget {
     timeseries_definition {
-      title = "Volume de Requisições - auth-service"
+      title = "Volume Total de Requisições - auth-service"
       
       request {
         formula {
           formula_expression = "query1"
         }
-
         query {
           metric_query {
             name  = "query1"
-            # Query EXATA extraída da UI do Datadog
             query = "count:http.server.duration{service:auth-service}.as_rate()"
           }
         }
+        display_type = "line"
+      }
+    }
+  }
 
+  # Widget 3: Volume Exclusivo de Erros 4xx 
+  widget {
+    timeseries_definition {
+      title = "Volume de Erros 4xx (Unauthorized/Bad Request)"
+      
+      request {
+        formula {
+          formula_expression = "query2"
+        }
+        query {
+          metric_query {
+            name  = "query2"
+            query = "count:http.server.duration{service:auth-service,http.status_code:4*}.as_rate()"
+          }
+        }
         display_type = "line"
       }
     }
