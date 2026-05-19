@@ -40,7 +40,6 @@ resource "helm_release" "prometheus" {
     value = "enable-feature=remote-write-receiver"
   }
 
-  # Permite que o container configmap-reload envie o comando de restart para o Prometheus
   set {
     name  = "server.extraFlags[2]"
     value = "web.enable-lifecycle"
@@ -70,8 +69,37 @@ resource "helm_release" "prometheus" {
     name  = "server.alertmanagers[0].static_configs[0].targets[0]"
     value = "alertmanager-manual-svc.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:9093"
   }
-}
 
+  # --- NOVA CONFIGURAÇÃO: REGRAS DE ALERTA DO PAGER DUTY ---
+  values = [
+    yamlencode({
+      serverFiles = {
+        "alerting_rules.yml" = {
+          groups = [
+            {
+              name = "togglemaster-rules"
+              rules = [
+                {
+                  alert = "AltaTaxaErrosHTTP4xx"
+                  expr  = "(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"4..\"}[5m])) by (job) / sum(rate(http_server_duration_milliseconds_count[5m])) by (job)) * 100 > 5"
+                  for   = "3m"
+                  labels = {
+                    severity = "critical"
+                    team     = "sre-togglemaster"
+                  }
+                  annotations = {
+                    summary     = "Alta taxa de erros 4xx detetada no serviço: {{ $labels.job }}"
+                    description = "O microsserviço {{ $labels.job }} está com uma taxa de erros HTTP 4xx de {{ $value | printf \"%.2f\" }}% nos últimos 3 minutos, ultrapassando o limite seguro de 5%."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    })
+  ]
+}
 # ==========================================================
 # 3. LOKI (Sem discos)
 # ==========================================================
@@ -155,21 +183,29 @@ resource "kubernetes_config_map" "alertmanager_config" {
         resolve_timeout = "5m"
       }
       route = {
-        group_by        = ["alertname"]
+        group_by        = ["alertname", "job"]
         group_wait      = "10s"
         group_interval  = "10s"
         repeat_interval = "1h"
-        receiver        = "default-receiver"
+        receiver        = "pagerduty-togglemaster" # Envia os alertas para o receptor do PagerDuty
       }
       receivers = [
         {
-          name = "default-receiver"
+          name = "pagerduty-togglemaster"
+          pagerduty_configs = [
+            {
+              service_key   = "b2081df169994f03c0212edf54034fbb" # Sua Integration Key ativa
+              send_resolved = true
+              client        = "Prometheus Alertmanager (AWS Academy)"
+              description   = "Alerta Prometheus: {{ .CommonAnnotations.summary }}"
+              severity      = "{{ if eq .CommonLabels.severity \"critical\" }}critical{{ else }}warning{{ end }}"
+            }
+          ]
         }
       ]
     })
   }
 }
-
 resource "kubernetes_deployment" "alertmanager_manual" {
   depends_on = [kubernetes_config_map.alertmanager_config]
 
