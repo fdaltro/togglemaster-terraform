@@ -360,6 +360,10 @@ resource "helm_release" "otel_collector" {
               key  = "652f13a64d96b3cdb72aa07516d7f9a5"
               site = "datadoghq.com"
             }
+            # Força APENAS as métricas a irem para o Service local aberto
+            metrics = {
+              endpoint = "http://datadog.${kubernetes_namespace.monitoring.metadata[0].name}.svc.cluster.local:4318"
+            }
           }
         }
 
