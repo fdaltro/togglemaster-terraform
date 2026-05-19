@@ -525,7 +525,7 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
 }
 
 # ==========================================================
-# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER (Sintaxe Purificada)
+# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER
 # ==========================================================
 resource "datadog_dashboard" "togglemaster_dashboard" {
   title       = "ToggleMaster - Dashboard de Operações (Grupo 12)"
@@ -547,8 +547,18 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
       title = "Volume de Requisições - auth-service"
       
       request {
-        # Sintaxe limpa de query aceita nativamente pela API de Dashboards do Datadog
-        query        = "sum:http.server.duration_count{service_name:auth-service}.as_rate()"
+        # Estrutura moderna de fórmulas que isola a string e evita erros de parse no state
+        formula {
+          formula_expression = "query1"
+        }
+
+        query {
+          metric_query {
+            name  = "query1"
+            query = "sum:http.server.duration_count{service_name:auth-service}.as_rate()"
+          }
+        }
+
         display_type = "line"
       }
     }
