@@ -501,7 +501,7 @@ resource "helm_release" "datadog_agent" {
 }
 
 # ==========================================================
-# 10. ALERTA INTELIGENTE (Blindado para Erro 401)
+# 10. ALERTA INTELIGENTE (Adaptado para 4xx, 1 min e Grupo 04)
 # ==========================================================
 resource "datadog_monitor" "auth_service_5xx_alert" {
   name    = "[ToggleMaster] Taxa de Erro HTTP 4xx Crítica - auth-service"
@@ -509,8 +509,8 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   
   message = "A taxa de erro HTTP 4xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
 
-  # 🔥 CORREÇÃO: Voltamos para last_5m e cravamos http.status_code:401 exato
-  query = "sum(last_5m):count:http.server.duration{service:auth-service,http.status_code:401}.as_rate() / count:http.server.duration{service:auth-service}.as_rate() > 0.05"
+  # Usa last_1m para disparar rápido e 4* para pegar os erros do script
+  query = "sum(last_1m):count:http.server.duration{service:auth-service,http.status_code:4*}.as_rate() / count:http.server.duration{service:auth-service}.as_rate() > 0.05"
 
   monitor_thresholds {
     critical = 0.05
@@ -519,6 +519,7 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
 
   notify_no_data   = false
   evaluation_delay = 60
+
   tags = ["env:production", "service:auth-service", "team:grupo04-fiap"]
 }
 
@@ -530,46 +531,54 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
+  # Widget 1: Status do Alerta
   widget {
     alert_graph_definition {
       alert_id  = datadog_monitor.auth_service_5xx_alert.id
       viz_type  = "timeseries"
-      title     = "Status do Alerta: Taxa de Erro HTTP 401 (auth-service)"
+      title     = "Status do Alerta: Taxa de Erro HTTP 4xx (auth-service)"
     }
   }
 
+  # Widget 2: Volume Total (Molde EXATO que você validou que funciona)
   widget {
     timeseries_definition {
-      title = "Volume Total de Requisições - auth-service"
+      title = "Volume de Requisições - auth-service"
+      
       request {
         formula {
           formula_expression = "query1"
         }
+
         query {
           metric_query {
             name  = "query1"
             query = "count:http.server.duration{service:auth-service}.as_rate()"
           }
         }
+
         display_type = "line"
       }
     }
   }
 
+  # Widget 3: Volume de Erros 4xx (Clonado do Widget 2, filtrando o erro)
   widget {
     timeseries_definition {
-      title = "Volume de Erros 401 (Unauthorized)"
+      title = "Volume de Erros 4xx - auth-service"
+      
       request {
         formula {
           formula_expression = "query2"
         }
+
         query {
           metric_query {
             name  = "query2"
-            # 🔥 CORREÇÃO: Cravado http.status_code:401
-            query = "count:http.server.duration{service:auth-service,http.status_code:401}.as_rate()"
+            query = "count:http.server.duration{service:auth-service,http.status_code:4*}.as_rate()"
           }
         }
+
         display_type = "line"
       }
     }
