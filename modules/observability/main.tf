@@ -501,7 +501,7 @@ resource "helm_release" "datadog_agent" {
 }
 
 # ==========================================================
-# 10. ALERTA INTELIGENTE (Gatilho rápido de 1 minuto)
+# 10. ALERTA INTELIGENTE (Blindado para Erro 401)
 # ==========================================================
 resource "datadog_monitor" "auth_service_5xx_alert" {
   name    = "[ToggleMaster] Taxa de Erro HTTP 4xx Crítica - auth-service"
@@ -509,8 +509,8 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   
   message = "A taxa de erro HTTP 4xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
 
-  # 🔥 ALTERADO: sum(last_1m) forçará o Datadog a avaliar apenas o último minuto, acelerando o disparo
-  query = "sum(last_1m):count:http.server.duration{service:auth-service,http.status_code:4*}.as_rate() / count:http.server.duration{service:auth-service}.as_rate() > 0.05"
+  # 🔥 CORREÇÃO: Voltamos para last_5m e cravamos http.status_code:401 exato
+  query = "sum(last_5m):count:http.server.duration{service:auth-service,http.status_code:401}.as_rate() / count:http.server.duration{service:auth-service}.as_rate() > 0.05"
 
   monitor_thresholds {
     critical = 0.05
@@ -518,37 +518,29 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   }
 
   notify_no_data   = false
-  
-  # Tempo de espera para garantir que o OpenTelemetry enviou os dados antes de avaliar
   evaluation_delay = 60
-
-  # 🔥 ALTERADO: Atualizado para grupo04
   tags = ["env:production", "service:auth-service", "team:grupo04-fiap"]
 }
 
 # ==========================================================
-# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER
+# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER (Grupo 04)
 # ==========================================================
 resource "datadog_dashboard" "togglemaster_dashboard" {
-  # 🔥 ALTERADO: Atualizado para Grupo 04
   title       = "ToggleMaster - Dashboard de Operações (Grupo 04)"
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
-  # Widget 1: Gráfico do Status do Alerta (Vermelho quando dispara)
   widget {
     alert_graph_definition {
       alert_id  = datadog_monitor.auth_service_5xx_alert.id
       viz_type  = "timeseries"
-      title     = "Status do Alerta: Taxa de Erro HTTP 4xx (auth-service)"
+      title     = "Status do Alerta: Taxa de Erro HTTP 401 (auth-service)"
     }
   }
 
-  # Widget 2: Volume Total de Requisições (Sucesso + Erro)
   widget {
     timeseries_definition {
       title = "Volume Total de Requisições - auth-service"
-      
       request {
         formula {
           formula_expression = "query1"
@@ -564,11 +556,9 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
     }
   }
 
-  # Widget 3: Volume Exclusivo de Erros 4xx 
   widget {
     timeseries_definition {
-      title = "Volume de Erros 4xx (Unauthorized/Bad Request)"
-      
+      title = "Volume de Erros 401 (Unauthorized)"
       request {
         formula {
           formula_expression = "query2"
@@ -576,7 +566,8 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
         query {
           metric_query {
             name  = "query2"
-            query = "count:http.server.duration{service:auth-service,http.status_code:4*}.as_rate()"
+            # 🔥 CORREÇÃO: Cravado http.status_code:401
+            query = "count:http.server.duration{service:auth-service,http.status_code:401}.as_rate()"
           }
         }
         display_type = "line"
