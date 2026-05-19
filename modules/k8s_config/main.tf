@@ -166,7 +166,7 @@ resource "kubernetes_secret" "targeting_secret" {
   type = "Opaque"
 }
 
-# ==========================================================
+# ===========================================================
 # 8. PERMISSÃO AUTOMÁTICA PARA SELF-HEALING (AWS ACADEMY)
 # Garante que a Lambda (via LabRole) possa executar o restart
 # ==========================================================
