@@ -411,7 +411,7 @@ resource "helm_release" "metrics_server" {
 }
 
 # ===========================================================
-# 9. DATADOG AGENT (Âncora de Infraestrutura)
+# 9. DATADOG AGENT (Âncora de Infraestrutura & Receptor OTLP)
 # ===========================================================
 resource "helm_release" "datadog_agent" {
   name       = "datadog"
@@ -424,6 +424,28 @@ resource "helm_release" "datadog_agent" {
     name  = "datadog.apiKey"
     value = "652f13a64d96b3cdb72aa07516d7f9a5" # Chave idêntica à usada no OTel
   }
+
+  # --- LIBERAÇÃO DAS PORTAS DO OPENTELEMETRY PROTOCOL (OTLP) ---
+  set {
+    name  = "datadog.otlp.receiver.protocols.grpc.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "datadog.otlp.receiver.protocols.grpc.endpoint"
+    value = "0.0.0.0:4317"
+  }
+
+  set {
+    name  = "datadog.otlp.receiver.protocols.http.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "datadog.otlp.receiver.protocols.http.endpoint"
+    value = "0.0.0.0:4318"
+  }
+  # -------------------------------------------------------------
 
   set {
     name = "datadog.confd.redisdb\\.yaml"
@@ -495,18 +517,18 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   notify_no_data   = false
   evaluation_delay = 60
 
-  tags = ["env:production", "service:auth-service", "team:grupo04-fiap"]
+  tags = ["env:production", "service:auth-service", "team:grupo12-fiap"]
 }
 
 # ==========================================================
-# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER
+# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER (Corrigido para OTel)
 # ==========================================================
 resource "datadog_dashboard" "togglemaster_dashboard" {
-  title       = "ToggleMaster - Dashboard de Operações (Grupo 04)"
+  title       = "ToggleMaster - Dashboard de Operações (Grupo 12)"
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
-  # Widget 1: Gráfico de linha temporal associado ao alerta de 5xx
+  # Widget 1: Gráfico de linha temporal associado ao estado do alerta de 5xx
   widget {
     alert_graph_definition {
       alert_id  = datadog_monitor.auth_service_5xx_alert.id
@@ -515,7 +537,7 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
     }
   }
 
-  # Widget 2: Gráfico de volume de requisições por segundo (Hits) no OpenTelemetry
+  # Widget 2: Gráfico de volume de requisições por segundo (Hits) vindo do OpenTelemetry
   widget {
     timeseries_definition {
       title = "Volume de Requisições - auth-service"
