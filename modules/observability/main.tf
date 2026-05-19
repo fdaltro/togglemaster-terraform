@@ -475,7 +475,7 @@ resource "helm_release" "datadog_agent" {
 }
 
 # ==========================================================
-# 10. ALERTA INTELIGENTE 
+# 10. ALERTA INTELIGENTE (Corrigido para OpenTelemetry)
 # ==========================================================
 resource "datadog_monitor" "auth_service_5xx_alert" {
   name    = "[ToggleMaster] Taxa de Erro HTTP 5xx Crítica - auth-service"
@@ -484,8 +484,8 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
   # Mensagem de envio que aciona as suas integrações de ChatOps e PagerDuty
   message = "A taxa de erro HTTP 5xx do auth-service ultrapassou 5%. Acionando PagerDuty e canal de ChatOps. @pagerduty-ToggleMaster @slack-togglemaster-alerts"
 
-  # Métrica de APM: Se a divisão de erros por requisições nos últimos 5 minutos for > 5%
-  query = "avg(last_5m):sum:trace.http.server.errors{service:auth-service}.as_rate() / sum:trace.http.server.hits{service:auth-service}.as_rate() > 0.05"
+  # Métrica corrigida para OTel: Soma as requisições com status 5xx e divide pelo total de requisições do serviço nos últimos 5 minutos
+  query = "sum(last_5m):sum:http.server.duration_count{service_name:auth-service,http_status_code:5*}.as_rate() / sum:http.server.duration_count{service_name:auth-service}.as_rate() > 0.05"
 
   monitor_thresholds {
     critical = 0.05
@@ -506,7 +506,7 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
-  # Widget 1: Gráfico de linha temporal associado ao alerta de 5xx que você já tem
+  # Widget 1: Gráfico de linha temporal associado ao alerta de 5xx
   widget {
     alert_graph_definition {
       alert_id  = datadog_monitor.auth_service_5xx_alert.id
@@ -515,12 +515,12 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
     }
   }
 
-  # Widget 2: Gráfico de volume de requisições por segundo (Hits) no APM
+  # Widget 2: Gráfico de volume de requisições por segundo (Hits) no OpenTelemetry
   widget {
     timeseries_definition {
       title = "Volume de Requisições - auth-service"
       request {
-        q            = "sum:trace.http.server.hits{service:auth-service}.as_rate()"
+        q            = "sum:http.server.duration_count{service_name:auth-service}.as_rate()"
         display_type = "line"
       }
     }
