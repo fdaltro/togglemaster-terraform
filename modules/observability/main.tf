@@ -525,14 +525,14 @@ resource "datadog_monitor" "auth_service_5xx_alert" {
 }
 
 # ==========================================================
-# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER (Corrigido para OTel)
+# 11. DASHBOARD DE OPERAÇÕES - TOGGLEMASTER (Sintaxe Purificada)
 # ==========================================================
 resource "datadog_dashboard" "togglemaster_dashboard" {
   title       = "ToggleMaster - Dashboard de Operações (Grupo 12)"
   description = "Painel consolidado de SRE e Observabilidade criado via Terraform"
   layout_type = "ordered"
 
-  # Widget 1: Gráfico de linha temporal associado ao estado do alerta de 5xx
+  # Widget 1: Gráfico associado ao estado do alerta de 5xx (Conecta pelo ID do Monitor)
   widget {
     alert_graph_definition {
       alert_id  = datadog_monitor.auth_service_5xx_alert.id
@@ -545,8 +545,10 @@ resource "datadog_dashboard" "togglemaster_dashboard" {
   widget {
     timeseries_definition {
       title = "Volume de Requisições - auth-service"
+      
       request {
-        q            = "sum:http.server.duration_count{service_name:auth-service}.as_rate()"
+        # Sintaxe limpa de query aceita nativamente pela API de Dashboards do Datadog
+        query        = "sum:http.server.duration_count{service_name:auth-service}.as_rate()"
         display_type = "line"
       }
     }
